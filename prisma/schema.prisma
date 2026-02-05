@@ -1,0 +1,549 @@
+// Prisma schema for WorkflowOS
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// USER MANAGEMENT & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  firstName     String?
+  lastName      String?
+  imageUrl      String?
+  role          UserRole  @default(USER)
+  
+  // Security
+  isActive      Boolean   @default(true)
+  isSuspended   Boolean   @default(false)
+  suspendedAt   DateTime?
+  suspendedBy   String?
+  lastLoginAt   DateTime?
+  lastLoginIp   String?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  organization  Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+  
+  workflows     Workflow[]
+  workflowRuns  WorkflowRun[]
+  integrations  Integration[]
+  apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  
+  @@index([clerkId])
+  @@index([email])
+  @@index([organizationId])
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OWNER
+  MEMBER
+}
+
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  industry        String?
+  size            String?
+  
+  // Subscription
+  subscriptionTier SubscriptionTier @default(STARTER)
+  subscriptionStatus String @default("active")
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  
+  // Limits
+  workflowLimit   Int      @default(5)
+  runLimit        Int      @default(500)
+  userLimit       Int      @default(1)
+  
+  // Settings
+  settings        Json?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  users           User[]
+  workflows       Workflow[]
+  integrations    Integration[]
+  
+  @@index([slug])
+  @@map("organizations")
+}
+
+enum SubscriptionTier {
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+  ENTERPRISE
+}
+
+// ============================================
+// WORKFLOWS
+// ============================================
+
+model Workflow {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  
+  // Configuration
+  triggerType     TriggerType
+  triggerConfig   Json
+  steps           Json     // Array of workflow steps
+  
+  // Status
+  isActive        Boolean  @default(false)
+  isPaused        Boolean  @default(false)
+  
+  // Metadata
+  category        String?
+  tags            String[]
+  industry        String?
+  
+  // AI Generated
+  isAiGenerated   Boolean  @default(false)
+  naturalLanguageInput String?
+  
+  // Analytics
+  totalRuns       Int      @default(0)
+  successfulRuns  Int      @default(0)
+  failedRuns      Int      @default(0)
+  averageRunTime  Int?     // in milliseconds
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastRunAt       DateTime?
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String?
+  
+  runs            WorkflowRun[]
+  schedules       WorkflowSchedule[]
+  
+  @@index([userId])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([triggerType])
+  @@map("workflows")
+}
+
+enum TriggerType {
+  MANUAL
+  SCHEDULE
+  WEBHOOK
+  EMAIL
+  FORM_SUBMISSION
+  CALENDAR_EVENT
+  SPREADSHEET_UPDATE
+  FILE_UPLOAD
+  PAYMENT_RECEIVED
+  CONDITION
+}
+
+model WorkflowSchedule {
+  id              String   @id @default(cuid())
+  
+  // Schedule configuration
+  cronExpression  String?
+  timezone        String   @default("UTC")
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  nextRunAt       DateTime?
+  lastRunAt       DateTime?
+  
+  // Relations
+  workflow        Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId      String
+  
+  @@index([workflowId])
+  @@index([nextRunAt])
+  @@map("workflow_schedules")
+}
+
+model WorkflowRun {
+  id              String   @id @default(cuid())
+  
+  // Execution details
+  status          RunStatus @default(PENDING)
+  triggerSource   String?
+  triggerData     Json?
+  
+  // Results
+  steps           Json     // Array of step executions
+  output          Json?
+  error           String?
+  errorStack      String?
+  
+  // Performance
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?     // in milliseconds
+  
+  // Retry logic
+  retryCount      Int      @default(0)
+  maxRetries      Int      @default(3)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  workflow        Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId      String
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  
+  @@index([workflowId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("workflow_runs")
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
+// ============================================
+// INTEGRATIONS
+// ============================================
+
+model Integration {
+  id              String   @id @default(cuid())
+  
+  // Integration details
+  provider        String   // gmail, google-sheets, stripe, etc.
+  providerType    IntegrationType
+  
+  // Authentication
+  accessToken     String?  @db.Text
+  refreshToken    String?  @db.Text
+  tokenExpiry     DateTime?
+  
+  // Configuration
+  config          Json?
+  scopes          String[]
+  
+  // Status
+  isActive        Boolean  @default(true)
+  isConnected     Boolean  @default(false)
+  lastSyncAt      DateTime?
+  
+  // Metadata
+  accountEmail    String?
+  accountName     String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String?
+  
+  @@unique([userId, provider])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([provider])
+  @@map("integrations")
+}
+
+enum IntegrationType {
+  EMAIL
+  CALENDAR
+  SPREADSHEET
+  CRM
+  PAYMENT
+  STORAGE
+  COMMUNICATION
+  FORM
+  ECOMMERCE
+  ACCOUNTING
+  CUSTOM
+}
+
+// ============================================
+// TEMPLATES
+// ============================================
+
+model WorkflowTemplate {
+  id              String   @id @default(cuid())
+  
+  // Template details
+  name            String
+  description     String
+  category        String
+  industry        String?
+  
+  // Configuration
+  triggerType     TriggerType
+  triggerConfig   Json
+  steps           Json
+  
+  // Metadata
+  tags            String[]
+  difficulty      String   @default("beginner") // beginner, intermediate, advanced
+  estimatedSetupTime Int?  // in minutes
+  
+  // Popularity
+  usageCount      Int      @default(0)
+  rating          Float?
+  
+  // Status
+  isPublished     Boolean  @default(false)
+  isFeatured      Boolean  @default(false)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([category])
+  @@index([industry])
+  @@index([isPublished])
+  @@map("workflow_templates")
+}
+
+// ============================================
+// API & WEBHOOKS
+// ============================================
+
+model ApiKey {
+  id              String   @id @default(cuid())
+  
+  // Key details
+  name            String
+  key             String   @unique
+  keyHash         String   @unique
+  
+  // Permissions
+  scopes          String[]
+  
+  // Status
+  isActive        Boolean  @default(true)
+  expiresAt       DateTime?
+  
+  // Usage tracking
+  lastUsedAt      DateTime?
+  usageCount      Int      @default(0)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  
+  @@index([userId])
+  @@index([key])
+  @@map("api_keys")
+}
+
+model Webhook {
+  id              String   @id @default(cuid())
+  
+  // Webhook details
+  url             String
+  secret          String
+  
+  // Events
+  events          String[] // workflow.completed, workflow.failed, etc.
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  // Delivery tracking
+  lastDeliveryAt  DateTime?
+  failureCount    Int      @default(0)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("webhooks")
+}
+
+// ============================================
+// AUDIT & SECURITY
+// ============================================
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  
+  // Event details
+  action          String
+  entity          String
+  entityId        String?
+  
+  // Changes
+  oldValue        Json?
+  newValue        Json?
+  
+  // Context
+  ipAddress       String?
+  userAgent       String?
+  metadata        Json?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId          String?
+  
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SecurityEvent {
+  id              String   @id @default(cuid())
+  
+  // Event details
+  type            SecurityEventType
+  severity        String   // low, medium, high, critical
+  description     String
+  
+  // Context
+  ipAddress       String?
+  userAgent       String?
+  metadata        Json?
+  
+  // Status
+  isResolved      Boolean  @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("security_events")
+}
+
+enum SecurityEventType {
+  FAILED_LOGIN
+  SUSPICIOUS_ACTIVITY
+  RATE_LIMIT_EXCEEDED
+  UNAUTHORIZED_ACCESS
+  DATA_BREACH_ATTEMPT
+  API_KEY_COMPROMISED
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id              String   @id @default(cuid())
+  
+  // Notification details
+  type            NotificationType
+  title           String
+  message         String
+  
+  // Status
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  
+  // Metadata
+  metadata        Json?
+  actionUrl       String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  WORKFLOW_SUCCESS
+  WORKFLOW_FAILED
+  INTEGRATION_DISCONNECTED
+  LIMIT_REACHED
+  SUBSCRIPTION_UPDATED
+  SECURITY_ALERT
+  SYSTEM_UPDATE
+}
+
+// ============================================
+// ANALYTICS
+// ============================================
+
+model AnalyticsEvent {
+  id              String   @id @default(cuid())
+  
+  // Event details
+  eventName       String
+  eventType       String
+  
+  // Data
+  properties      Json?
+  
+  // Context
+  userId          String?
+  organizationId  String?
+  sessionId       String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  
+  @@index([eventName])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("analytics_events")
+}

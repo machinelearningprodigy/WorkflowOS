@@ -1,0 +1,3 @@
+// Variable Picker - Visual data selector
+// Popover that shows available data from previous steps
+// "Insert Variable" from Trigger, Step 1, Step 2...

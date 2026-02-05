@@ -1,0 +1,7 @@
+// Robots.txt - SEO robots configuration
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+
+Sitemap: https://workflowos.com/sitemap.xml
