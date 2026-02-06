@@ -55,13 +55,18 @@ export class WorkflowEngine {
         let isSuccess = true;
 
         try {
-            const nodes = workflow.graph_data?.nodes || [];
-            const edges = workflow.graph_data?.edges || [];
+            const definition = workflow.definition as any;
+            const nodes = definition?.nodes || [];
+            const edges = definition?.edges || [];
 
             // Find Start Node
-            // We assume one node with type 'trigger' or 'webhook' etc.
-            // Or fallback to finding a node with no incoming edges
-            let currentNode = nodes.find((n: any) => n.id === 'trigger' || n.type === 'trigger' || n.type === 'webhook' || n.type === 'manual-trigger');
+            // In the new builder, triggers have data.provider = 'trigger'
+            let currentNode = nodes.find((n: any) =>
+                n.id === 'trigger' ||
+                n.type === 'trigger' ||
+                n.data?.provider === 'trigger' ||
+                n.id.includes('trigger')
+            );
 
             if (!currentNode) {
                 const targetIds = new Set(edges.map((e: any) => e.target));
@@ -91,6 +96,7 @@ export class WorkflowEngine {
                         stepId,
                         workflowId,
                         executionId: run.id,
+                        userId: workflow.user_id, // Pass user ID for integrations
                         input: nodeData,
                         environment: {}, // TODO: Load env vars from secure storage
                         previousSteps: stepOutputs

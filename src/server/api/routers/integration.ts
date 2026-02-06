@@ -31,7 +31,7 @@ export const integrationRouter = createTRPCRouter({
             name: provider.name,
             type: provider.type,
             description: `Connect to ${provider.name} to extend your workflows.`,
-            auth_type: (provider as any).getAuthUrl ? 'oauth2' : 'api_key', // Heuristic
+            auth_type: provider.authType,
             is_configured: provider.isConfigured(),
         }));
         return providers;
@@ -275,5 +275,105 @@ export const integrationRouter = createTRPCRouter({
                 actions: provider.getAvailableActions(),
                 triggers: provider.getAvailableTriggers(),
             };
+        }),
+
+    // List specific resources from a provider (e.g. spreadsheets, channels)
+    listResources: protectedProcedure
+        .input(z.object({
+            provider: z.string(),
+            resourceType: z.string(),
+            parentId: z.string().optional(),
+        }))
+        .query(async ({ ctx, input }) => {
+            // 1. Get connection for user
+            const { data: connection, error } = await ctx.supabase
+                .from('connections')
+                .select('*')
+                .eq('provider_slug', input.provider)
+                .eq('user_id', ctx.user.id)
+                .single();
+
+            if (error || !connection) return [];
+
+            const provider = getProvider(input.provider);
+            if (!provider) return [];
+
+            // Helper to get fresh token
+            const getFreshToken = async () => {
+                let token = connection.access_token;
+
+                // Check if expired (with 1 min buffer)
+                const isExpired = connection.expires_at && new Date(connection.expires_at).getTime() < (Date.now() + 60000);
+
+                if (isExpired && connection.refresh_token) {
+                    try {
+                        const tokens = await provider.refreshAccessToken(connection.refresh_token, {
+                            clientId: connection.client_id,
+                            clientSecret: connection.client_secret
+                        });
+
+                        // Update DB
+                        await ctx.supabase
+                            .from('connections')
+                            .update({
+                                access_token: tokens.accessToken,
+                                refresh_token: tokens.refreshToken || connection.refresh_token,
+                                expires_at: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString() : null,
+                                status: 'connected',
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', connection.id);
+
+                        token = tokens.accessToken;
+                    } catch (refreshErr) {
+                        console.error("Token refresh failed", refreshErr);
+                        // Fallback to current token (it might still work if clock skew, or fail with 401 later)
+                    }
+                }
+                return token;
+            };
+
+            // 2. Handle Google Sheets
+            if (input.provider === 'google-sheets') {
+                try {
+                    let token = await getFreshToken();
+
+                    if (input.resourceType === 'spreadsheets') {
+                        try {
+                            return await (provider as any).listSpreadsheets(token);
+                        } catch (e: any) {
+                            // If 401 after refresh attempt, try one last refresh if we didn't just do it
+                            if (e.message?.includes('401') && connection.refresh_token) {
+                                const tokens = await provider.refreshAccessToken(connection.refresh_token);
+                                await ctx.supabase.from('connections').update({ access_token: tokens.accessToken }).eq('id', connection.id);
+                                return await (provider as any).listSpreadsheets(tokens.accessToken);
+                            }
+                            throw e;
+                        }
+                    }
+                    if (input.resourceType === 'worksheets' && input.parentId) {
+                        return await (provider as any).getWorksheets(input.parentId, token);
+                    }
+                } catch (e: any) {
+                    console.error("Failed to list resources", e);
+
+                    if (e.message?.includes('Google Drive API has not been used') || e.message?.includes('accessNotConfigured')) {
+                        throw new TRPCError({
+                            code: 'PRECONDITION_FAILED',
+                            message: 'Google Drive API is not enabled. Please enable it in your Google Cloud Console.'
+                        });
+                    }
+
+                    if (e.message?.includes('insufficient authentication scopes') || e.message?.includes('401') || e.message?.includes('403') || e.message?.includes('Insufficient Permission')) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Authentication Error: Please disconnect and reconnect Google Sheets.'
+                        });
+                    }
+                    return [];
+                }
+            }
+
+            return [];
         }),
 });

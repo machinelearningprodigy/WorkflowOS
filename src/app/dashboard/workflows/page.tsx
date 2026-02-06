@@ -53,7 +53,7 @@ export default function WorkflowsPage() {
         }
     }
 
-    const filteredWorkflows = data?.workflows.filter(w =>
+    const filteredWorkflows = data?.items?.filter(w =>
         w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         w.description?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || []

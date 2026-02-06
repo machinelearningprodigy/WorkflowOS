@@ -1,173 +1,192 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Bot, Sparkles, ArrowRight, LayoutTemplate, Plus } from "lucide-react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { trpc } from "@/utils/trpc"
-import { useToast } from "@/components/ui/use-toast"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loader2, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { trpc } from '@/utils/trpc'
+import { useToast } from '@/components/ui/use-toast'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function NewWorkflowPage() {
     const router = useRouter()
     const { toast } = useToast()
-    const [prompt, setPrompt] = useState("")
-    const [isGenerating, setIsGenerating] = useState(false)
+    const [showDialog, setShowDialog] = useState(true)
+    const [name, setName] = useState('')
+    const [description, setDescription] = useState('')
+    const [aiPrompt, setAiPrompt] = useState('')
+    const [useAI, setUseAI] = useState(false)
 
-    // Mutation to create a workflow (Manual)
     const createMutation = trpc.workflow.create.useMutation({
-        onSuccess: (data) => {
-            toast({ title: "Workflow created successfully" })
-            router.push(`/dashboard/workflows/${data.id}`)
+        onSuccess: (workflow) => {
+            toast({ title: 'Workflow created!' })
+            router.push(`/dashboard/workflows/${workflow.id}`)
         },
-        onError: (error) => {
-            toast({
-                title: "Error creating workflow",
-                description: error.message,
-                variant: "destructive"
-            })
-        }
+        onError: (err) => {
+            toast({ title: 'Failed to create', description: err.message, variant: 'destructive' })
+        },
     })
 
-    // Mutation to generate workflow via AI
-    const generateMutation = trpc.ai.generateWorkflow.useMutation({
-        onSuccess: (data) => {
-            setIsGenerating(false)
-            toast({ title: "AI Magic Complete ✨", description: "Your workflow is ready!" })
-            router.push(`/dashboard/workflows/${data.id}`)
-        },
-        onError: (error) => {
-            setIsGenerating(false)
-            toast({
-                title: "AI Generation Failed",
-                description: error.message,
-                variant: "destructive"
-            })
-        }
-    })
+    const generateMutation = trpc.workflow.generateFromPrompt.useMutation()
 
-    const handleGenerate = async () => {
-        if (!prompt.trim()) return
-
-        setIsGenerating(true)
-        generateMutation.mutate({ description: prompt })
-    }
-
-    const handleStartScratch = () => {
-        createMutation.mutate({
-            name: "Untitled Workflow",
-            description: "New workflow started from scratch",
-            definition: {
-                nodes: [
-                    {
-                        id: 'trigger-1',
-                        type: 'default',
-                        position: { x: 250, y: 50 },
-                        data: { label: 'Manual Trigger', provider: 'Manual' }
-                    }
-                ],
-                edges: []
+    const handleCreate = async () => {
+        if (useAI) {
+            if (!aiPrompt.trim()) {
+                toast({ title: 'Prompt required', description: 'Please describe your workflow', variant: 'destructive' })
+                return
             }
-        })
+
+            try {
+                // 1. Generate nodes from AI
+                const generated = await generateMutation.mutateAsync({ prompt: aiPrompt })
+
+                // 2. Create workflow with generated definition
+                createMutation.mutate({
+                    name: 'AI Generated Workflow', // Could extract from prompt or ask user
+                    description: aiPrompt,
+                    definition: {
+                        nodes: generated.nodes,
+                        edges: generated.edges,
+                    },
+                })
+            } catch (err: any) {
+                toast({ title: 'Generation failed', description: err.message, variant: 'destructive' })
+            }
+        } else {
+            if (!name.trim()) {
+                toast({ title: 'Name required', description: 'Please enter a workflow name', variant: 'destructive' })
+                return
+            }
+
+            createMutation.mutate({
+                name,
+                description,
+                definition: {
+                    nodes: [],
+                    edges: [],
+                },
+            })
+        }
     }
 
     return (
-        <div className="container mx-auto py-10 max-w-5xl">
-            <div className="mb-10 text-center">
-                <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-                    Create New Workflow
-                </h1>
-                <p className="text-xl text-muted-foreground">
-                    Start automating your tasks in seconds. Choose how you want to build.
-                </p>
-            </div>
+        <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+            <Dialog open={showDialog} onOpenChange={setShowDialog}>
+                {/* ... existing dialog content ... */}
+                <DialogContent className="sm:max-w-2xl rounded-3xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl flex items-center gap-3">
+                            <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600">
+                                <Sparkles className="h-6 w-6 text-white" />
+                            </div>
+                            Create New Workflow
+                        </DialogTitle>
+                        <DialogDescription>
+                            Build powerful automations with AI assistance or start from scratch
+                        </DialogDescription>
+                    </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* AI Generator Option */}
-                <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all shadow-lg hover:shadow-xl bg-gradient-to-br from-background to-primary/5">
-                    <CardHeader>
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                            <Sparkles className="w-6 h-6 text-primary" />
-                        </div>
-                        <CardTitle className="flex items-center gap-2">
-                            Generate with AI
-                            <Badge variant="secondary" className="bg-primary/20 text-primary hover:bg-primary/30">Beta</Badge>
-                        </CardTitle>
-                        <CardDescription>
-                            Describe what you want to achieve, and we'll build the workflow for you.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <Label htmlFor="prompt">Describe your workflow</Label>
-                            <Textarea
-                                id="prompt"
-                                placeholder="e.g. When a new row is added to Google Sheets, send a Slack message and create a Jira ticket."
-                                className="min-h-[120px] resize-none bg-background/50"
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
+                    <div className="space-y-6 py-6">
+                        {/* AI Toggle */}
+                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
+                            <input
+                                type="checkbox"
+                                id="use-ai"
+                                checked={useAI}
+                                onChange={(e) => setUseAI(e.target.checked)}
+                                className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
                             />
+                            <label htmlFor="use-ai" className="flex-1 cursor-pointer">
+                                <div className="font-semibold text-indigo-900">Use AI Generation</div>
+                                <div className="text-sm text-indigo-600">Describe what you want and let AI build it</div>
+                            </label>
                         </div>
-                    </CardContent>
-                    <CardFooter>
+
+                        {useAI ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="ai-prompt" className="text-sm font-semibold">
+                                    Describe Your Workflow
+                                </Label>
+                                <Textarea
+                                    id="ai-prompt"
+                                    placeholder="e.g., Send me an email when someone fills out my form, then add their info to a Google Sheet"
+                                    value={aiPrompt}
+                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                    className="min-h-[120px] rounded-xl resize-none"
+                                />
+                                <p className="text-xs text-slate-500">
+                                    Mention integrations like Gmail, Slack, Calendar, YouTube, Gemini, etc.
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="name" className="text-sm font-semibold">
+                                        Workflow Name
+                                    </Label>
+                                    <Input
+                                        id="name"
+                                        placeholder="My Automation"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="rounded-xl"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="description" className="text-sm font-semibold">
+                                        Description (Optional)
+                                    </Label>
+                                    <Textarea
+                                        id="description"
+                                        placeholder="What does this workflow do?"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        className="rounded-xl resize-none"
+                                        rows={3}
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Link href="/dashboard/workflows">
+                            <Button variant="outline" className="rounded-xl">
+                                Cancel
+                            </Button>
+                        </Link>
                         <Button
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                            size="lg"
-                            onClick={handleGenerate}
-                            disabled={isGenerating || !prompt.trim() || generateMutation.isLoading}
+                            onClick={handleCreate}
+                            disabled={createMutation.isLoading || generateMutation.isLoading || (!useAI && !name.trim()) || (useAI && !aiPrompt.trim())}
+                            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl px-8"
                         >
-                            {isGenerating || generateMutation.isLoading ? (
+                            {createMutation.isLoading || generateMutation.isLoading ? (
                                 <>
-                                    <Bot className="mr-2 h-4 w-4 animate-bounce" />
-                                    Generating...
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    {generateMutation.isLoading ? 'Generating...' : 'Creating...'}
                                 </>
                             ) : (
                                 <>
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate Magic Workflow
+                                    Create Workflow
                                 </>
                             )}
                         </Button>
-                    </CardFooter>
-                </Card>
-
-                <div className="space-y-6">
-                    {/* Start from Scratch */}
-                    <Card className="hover:border-primary/50 transition-colors cursor-pointer group" onClick={handleStartScratch}>
-                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-                            </div>
-                            <div className="space-y-1">
-                                <CardTitle className="text-lg">Start from Scratch</CardTitle>
-                                <CardDescription>Build your workflow manually using the visual editor.</CardDescription>
-                            </div>
-                            {createMutation.isLoading ? (
-                                <Bot className="ml-auto w-5 h-5 animate-spin text-primary" />
-                            ) : (
-                                <ArrowRight className="ml-auto w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
-                            )}
-                        </CardHeader>
-                    </Card>
-
-                    {/* Use Template */}
-                    <Card className="hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => router.push("/dashboard/templates")}>
-                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                <LayoutTemplate className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-                            </div>
-                            <div className="space-y-1">
-                                <CardTitle className="text-lg">Browse Templates</CardTitle>
-                                <CardDescription>Choose from 50+ pre-built automation recipes.</CardDescription>
-                            </div>
-                            <ArrowRight className="ml-auto w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
-                        </CardHeader>
-                    </Card>
-                </div>
-            </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

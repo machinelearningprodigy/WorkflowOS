@@ -22,36 +22,53 @@ const PROVIDER_ICONS: Record<string, string> = {
     'gmail': "https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg",
     'slack': "https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.svg",
     'github': "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
-    'discord': "https://upload.wikimedia.org/wikipedia/commons/7/71/Discord_Logo_Sans_Logo.svg",
+    'discord': "https://cdn.worldvectorlogo.com/logos/discord-6.svg",
     'google-sheets': "https://upload.wikimedia.org/wikipedia/commons/3/30/Google_Sheets_logo_%282014-2020%29.svg",
     'notion': "https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
     'stripe': "https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg",
-    'twilio': "https://upload.wikimedia.org/wikipedia/commons/7/72/Twilio_logo.svg",
+    'twilio': "https://www.vectorlogo.zone/logos/twilio/twilio-icon.svg",
     'google-drive': "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg",
-    'airtable': "https://upload.wikimedia.org/wikipedia/commons/4/4b/Airtable_Logo.svg",
-    'hubspot': "https://upload.wikimedia.org/wikipedia/commons/3/3f/HubSpot_Logo.svg",
-    'shopify': "https://upload.wikimedia.org/wikipedia/commons/0/0e/Shopify_logo_2018.svg",
-    'quickbooks': "https://upload.wikimedia.org/wikipedia/commons/b/bd/QuickBooks_logo.svg",
-    'salesforce': "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
-    'zoom': "https://upload.wikimedia.org/wikipedia/commons/f/f7/Zoom_Video_Communications_logo.svg",
-    'dropbox': "https://upload.wikimedia.org/wikipedia/commons/7/78/Dropbox_Icon.svg",
-    'whatsapp': "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
-    'paypal': "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg",
+    'airtable': "https://www.vectorlogo.zone/logos/airtable/airtable-icon.svg",
+    'hubspot': "https://www.vectorlogo.zone/logos/hubspot/hubspot-icon.svg",
+    'shopify': "https://www.vectorlogo.zone/logos/shopify/shopify-icon.svg",
+    'quickbooks': "https://www.vectorlogo.zone/logos/intuit_quickbooks/intuit_quickbooks-icon.svg",
+    'salesforce': "https://www.vectorlogo.zone/logos/salesforce/salesforce-icon.svg",
+    'zoom': "https://www.vectorlogo.zone/logos/zoomus/zoomus-icon.svg",
+    'dropbox': "https://www.vectorlogo.zone/logos/dropbox/dropbox-icon.svg",
+    'whatsapp': "https://www.vectorlogo.zone/logos/whatsapp/whatsapp-icon.svg",
+    'paypal': "https://www.vectorlogo.zone/logos/paypal/paypal-icon.svg",
     'google-calendar': "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg",
-    'google-forms': "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_Forms_logo_%282014-2020%29.svg",
-    'webhook': "https://upload.wikimedia.org/wikipedia/commons/f/f0/Ic_webhooks_48px.svg",
-    'calendly': "https://cdn.worldvectorlogo.com/logos/calendly.svg",
-    'linkedin': "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png",
-    'instagram-for-business': "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
-    'microsoft-excel': "https://upload.wikimedia.org/wikipedia/commons/3/34/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg",
-    'onedrive': "https://upload.wikimedia.org/wikipedia/commons/3/3c/Microsoft_Office_OneDrive_%282019%E2%80%93present%29.svg",
-    'outlook-calendar': "https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg",
+    'google-forms': "https://www.gstatic.com/images/branding/product/1x/forms_2020q4_48dp.png",
+    'webhook': "https://cdn-icons-png.flaticon.com/512/1011/1011322.png",
+    'calendly': "https://cdn.worldvectorlogo.com/logos/calendly-1.svg",
+    'linkedin': "https://www.vectorlogo.zone/logos/linkedin/linkedin-icon.svg",
+    'instagram': "https://www.vectorlogo.zone/logos/instagram/instagram-icon.svg",
+    'microsoft-excel': "https://www.vectorlogo.zone/logos/microsoft_excel/microsoft_excel-icon.svg",
+    'onedrive': "https://www.vectorlogo.zone/logos/microsoft_onedrive/microsoft_onedrive-icon.svg",
+    'outlook': "https://www.vectorlogo.zone/logos/microsoft_outlook/microsoft_outlook-icon.svg",
+    'pipedrive': "https://www.vectorlogo.zone/logos/pipedrive/pipedrive-icon.svg",
+    'square': "https://www.vectorlogo.zone/logos/square/square-icon.svg",
+    'typeform': "https://www.vectorlogo.zone/logos/typeform/typeform-icon.svg",
+    'woocommerce': "https://www.vectorlogo.zone/logos/woocommerce/woocommerce-icon.svg",
+    'zillow': "https://www.vectorlogo.zone/logos/zillow/zillow-icon.svg",
+    'openai': "https://static.cdnlogo.com/logos/o/38/openai.svg",
+    'database': "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+    'acuity': "https://www.vectorlogo.zone/logos/acuityscheduling/acuityscheduling-icon.svg",
+    'facebook-leads': "https://www.vectorlogo.zone/logos/facebook/facebook-icon.svg",
+    'jotform': "https://www.vectorlogo.zone/logos/jotform/jotform-icon.svg",
+    'opentable': "https://www.vectorlogo.zone/logos/opentable/opentable-icon.svg",
+    'servicetitan': "https://www.vectorlogo.zone/logos/servicetitan/servicetitan-icon.svg",
+    'toast-pos': "https://www.vectorlogo.zone/logos/toasttab/toasttab-icon.svg",
+    'youtube': "https://www.vectorlogo.zone/logos/youtube/youtube-icon.svg",
+    'google-maps': "https://www.vectorlogo.zone/logos/google_maps/google_maps-icon.svg",
+    'google-gemini': "https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/google-gemini-icon.svg",
 };
 
 const POPULARITY_ORDER = [
     'gmail', 'google-sheets', 'slack', 'stripe', 'github',
     'notion', 'airtable', 'hubspot', 'openai', 'google-drive',
-    'google-calendar', 'whatsapp', 'discord', 'webhook', 'shopify'
+    'google-calendar', 'youtube', 'google-gemini', 'google-maps',
+    'whatsapp', 'discord', 'webhook', 'shopify'
 ];
 
 export default function IntegrationsPage() {
@@ -145,10 +162,13 @@ export default function IntegrationsPage() {
         try {
             const origin = window.location.origin.replace(/\/+$/, '')
             const redirectUrl = `${origin}/api/integrations/callback/${provider.slug}`
+
+            // Try with server credentials first. If unconfigured, the dialog will show.
+            // If the user wants to use custom keys, the dialog will allow them.
             const { url, unconfigured } = await oauthMutation.mutateAsync({
                 provider: provider.slug,
-                clientId: customClientId,
-                clientSecret: customClientSecret,
+                clientId: "", // Force check server-side configuration
+                clientSecret: "",
                 redirectUrl: redirectUrl
             })
 
@@ -439,10 +459,20 @@ export default function IntegrationsPage() {
                         <div className="space-y-2">
                             <Label className="text-xs font-bold uppercase tracking-widest text-slate-400 flex justify-between">
                                 Client ID
-                                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline lowercase font-medium normal-case">Get from Google Console</a>
+                                {selectedProvider?.slug.includes('google') || selectedProvider?.slug === 'gmail' ? (
+                                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline lowercase font-medium normal-case font-bold">Get from Google Console</a>
+                                ) : selectedProvider?.slug === 'slack' ? (
+                                    <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline lowercase font-medium normal-case font-bold">Get from Slack API</a>
+                                ) : selectedProvider?.slug === 'github' ? (
+                                    <a href="https://github.com/settings/developers" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline lowercase font-medium normal-case font-bold">Get from GitHub Developers</a>
+                                ) : selectedProvider?.slug === 'notion' ? (
+                                    <a href="https://www.notion.so/my-integrations" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline lowercase font-medium normal-case font-bold">Get from Notion Integrations</a>
+                                ) : (
+                                    <span className="text-slate-400 lowercase font-medium normal-case italic">Check your developer portal</span>
+                                )}
                             </Label>
                             <Input
-                                placeholder="e.g. 742398457239-xxxxxxxx.apps.googleusercontent.com"
+                                placeholder={selectedProvider?.slug.includes('google') || selectedProvider?.slug === 'gmail' ? "e.g. 742398457239-xxxxxxxx.apps.googleusercontent.com" : "Enter your Client ID"}
                                 value={customClientId}
                                 onChange={(e) => setCustomClientId(e.target.value)}
                                 className="rounded-xl border-slate-200"
@@ -452,7 +482,7 @@ export default function IntegrationsPage() {
                             <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Client Secret</Label>
                             <Input
                                 type="password"
-                                placeholder="e.g. GOCSPX-xxxxxxxxxxxxxxxx"
+                                placeholder={selectedProvider?.slug.includes('google') || selectedProvider?.slug === 'gmail' ? "e.g. GOCSPX-xxxxxxxxxxxxxxxx" : "Enter your Client Secret"}
                                 value={customClientSecret}
                                 onChange={(e) => setCustomClientSecret(e.target.value)}
                                 className="rounded-xl border-slate-200"

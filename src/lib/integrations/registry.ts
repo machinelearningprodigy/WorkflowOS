@@ -38,6 +38,9 @@ import { NotionProvider } from './providers/notion.provider';
 import { DiscordProvider } from './providers/discord.provider';
 import { GitHubProvider } from './providers/github.provider';
 import { OpenAIProvider } from './providers/openai.provider';
+import { GoogleYouTubeProvider } from './providers/google-youtube.provider';
+import { GoogleMapsProvider } from './providers/google-maps.provider';
+import { GoogleGeminiProvider } from './providers/google-gemini.provider';
 
 const providers = new Map<string, IntegrationProvider>();
 
@@ -83,6 +86,9 @@ register('notion', new NotionProvider());
 register('discord', new DiscordProvider());
 register('github', new GitHubProvider());
 register('openai', new OpenAIProvider());
+register('youtube', new GoogleYouTubeProvider());
+register('google-maps', new GoogleMapsProvider());
+register('google-gemini', new GoogleGeminiProvider());
 
 export function getProvider(name: string): IntegrationProvider | undefined {
     return providers.get(name.toLowerCase());

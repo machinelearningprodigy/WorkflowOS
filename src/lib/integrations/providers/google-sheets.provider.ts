@@ -6,9 +6,11 @@ export class GoogleSheetsProvider extends BaseProvider {
 
     private clientId = process.env.GOOGLE_CLIENT_ID;
     private clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    public slug = 'google-sheets';
 
     private scopes = [
         'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive.readonly',
     ];
 
     override isConfigured(): boolean {
@@ -125,9 +127,24 @@ export class GoogleSheetsProvider extends BaseProvider {
     async executeAction(action: string, config: any, accessToken: string): Promise<any> {
         switch (action) {
             case 'add_row':
-                // Convert comma separated string to array for values if strictly simple types
-                // or assume defaults. For this mock, we assume config.values is a string
-                const values = Array.isArray(config.values) ? config.values : config.values.split(',').map((s: string) => s.trim());
+                let values: any[] = [];
+
+                if (Array.isArray(config.values)) {
+                    values = config.values;
+                } else if (typeof config.values === 'string') {
+                    try {
+                        const parsed = JSON.parse(config.values);
+                        if (Array.isArray(parsed)) {
+                            values = parsed;
+                        } else {
+                            values = [parsed]; // fallback if json but not array
+                        }
+                    } catch (e) {
+                        // Not JSON, fall back to simple CSV split
+                        values = config.values.split(',').map((s: string) => s.trim());
+                    }
+                }
+
                 return this.addRow({ ...config, values }, accessToken);
             case 'get_rows':
                 return this.getRows(config, accessToken);
@@ -137,7 +154,7 @@ export class GoogleSheetsProvider extends BaseProvider {
     }
 
     private async addRow(params: { spreadsheetId: string, range: string, values: string[] }, accessToken: string) {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${params.spreadsheetId}/values/${params.range}:append?valueInputOption=USER_ENTERED`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${params.spreadsheetId}/values/${encodeURIComponent(params.range)}:append?valueInputOption=USER_ENTERED`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -175,5 +192,55 @@ export class GoogleSheetsProvider extends BaseProvider {
         }
 
         return await response.json();
+    }
+
+    async listSpreadsheets(accessToken: string): Promise<Array<{ id: string, name: string }>> {
+        const q = "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false";
+        const params = new URLSearchParams({
+            q,
+            fields: 'files(id,name)',
+            pageSize: '100'
+        });
+
+        const url = `https://www.googleapis.com/drive/v3/files?${params.toString()}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Google Drive API Error: ${error}`);
+        }
+
+        const data = await response.json();
+        return data.files || [];
+    }
+
+    async getWorksheets(spreadsheetId: string, accessToken: string): Promise<Array<{ id: string, name: string }>> {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title,sheets.properties.sheetId`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Google Sheets API Error: ${error}`);
+        }
+
+        const data = await response.json();
+        return data.sheets.map((sheet: any) => ({
+            id: sheet.properties.title, // Use title as ID for convenience in range construction
+            name: sheet.properties.title
+        }));
     }
 }

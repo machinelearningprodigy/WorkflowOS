@@ -6,6 +6,8 @@ export class GmailProvider extends BaseProvider {
 
     private clientId = process.env.GOOGLE_CLIENT_ID;
     private clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    public slug = 'gmail';
+
     private scopes = [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/gmail.readonly',

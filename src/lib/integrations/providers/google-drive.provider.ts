@@ -4,8 +4,10 @@ export class GoogleDriveProvider extends BaseProvider {
     name = "Google Drive";
     type = "STORAGE";
 
-    private clientId = process.env.GOOGLE_CLIENT_ID!;
-    private clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+    private clientId = process.env.GOOGLE_CLIENT_ID;
+    private clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    public slug = 'google-drive';
+
     private scopes = [
         'https://www.googleapis.com/auth/drive.readonly',
         'https://www.googleapis.com/auth/drive.file',
@@ -16,7 +18,7 @@ export class GoogleDriveProvider extends BaseProvider {
     }
 
     getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string {
-        const clientId = overrides?.clientId || this.clientId;
+        const clientId = (overrides?.clientId || this.clientId) as string;
         const params = new URLSearchParams({
             client_id: clientId,
             redirect_uri: redirectUri,
@@ -31,8 +33,8 @@ export class GoogleDriveProvider extends BaseProvider {
     }
 
     async exchangeCodeForTokens(code: string, redirectUri: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
-        const clientId = overrides?.clientId || this.clientId;
-        const clientSecret = overrides?.clientSecret || this.clientSecret;
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const clientSecret = (overrides?.clientSecret || this.clientSecret) as string;
 
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
@@ -47,7 +49,7 @@ export class GoogleDriveProvider extends BaseProvider {
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error_description || data.error);
+        if (!response.ok) throw new Error(data.error_description || data.error || 'Failed to exchange code for token');
 
         // Fetch user info as providerUserId
         const aboutResponse = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
@@ -59,15 +61,42 @@ export class GoogleDriveProvider extends BaseProvider {
             accessToken: data.access_token,
             refreshToken: data.refresh_token,
             expiresIn: data.expires_in,
-            providerUserId: about.user.emailAddress,
+            scope: data.scope,
+            providerUserId: about.user?.emailAddress || 'me',
+        };
+    }
+
+    async refreshAccessToken(refreshToken: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const clientSecret = (overrides?.clientSecret || this.clientSecret) as string;
+
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                refresh_token: refreshToken,
+                client_id: clientId,
+                client_secret: clientSecret,
+                grant_type: 'refresh_token',
+            }),
+        });
+
+        const data = await response.json();
+        return {
+            accessToken: data.access_token,
+            expiresIn: data.expires_in,
         };
     }
 
     async testConnection(accessToken: string): Promise<boolean> {
-        const response = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        return response.ok;
+        try {
+            const response = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            return response.ok;
+        } catch {
+            return false;
+        }
     }
 
     getAvailableActions(): Action[] {

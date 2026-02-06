@@ -1,16 +1,16 @@
-import { BaseProvider, Action, Trigger, TokenResponse } from "../base.provider";
+import { BaseProvider, Action, TokenResponse } from "../base.provider";
 
-export class GoogleCalendarProvider extends BaseProvider {
-    name = "Google Calendar";
-    type = "CALENDAR";
+export class GoogleYouTubeProvider extends BaseProvider {
+    name = "YouTube";
+    type = "VIDEO";
+    public slug = 'youtube';
 
     private clientId = process.env.GOOGLE_CLIENT_ID;
     private clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    public slug = 'google-calendar';
-
     private scopes = [
-        'https://www.googleapis.com/auth/calendar',
-        'https://www.googleapis.com/auth/calendar.events'
+        'https://www.googleapis.com/auth/youtube.readonly',
+        'https://www.googleapis.com/auth/youtube.upload',
+        'https://www.googleapis.com/auth/youtube.force-ssl'
     ];
 
     override isConfigured(): boolean {
@@ -84,7 +84,7 @@ export class GoogleCalendarProvider extends BaseProvider {
 
     async testConnection(accessToken: string): Promise<boolean> {
         try {
-            const response = await fetch('https://www.googleapis.com/calendar/v3/colors', {
+            const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
             return response.ok;
@@ -96,26 +96,12 @@ export class GoogleCalendarProvider extends BaseProvider {
     getAvailableActions(): Action[] {
         return [
             {
-                id: "create_event",
-                name: "Create Event",
-                description: "Add a new event to your calendar.",
+                id: "list_videos",
+                name: "List My Videos",
+                description: "Retrieves a list of videos in your channel.",
                 inputs: [
-                    { id: "summary", name: "Summary", type: "string", required: true },
-                    { id: "startTime", name: "Start Time", type: "string", required: true },
-                    { id: "endTime", name: "End Time", type: "string", required: true },
-                    { id: "description", name: "Description", type: "string", required: false }
+                    { id: "maxResults", name: "Max Results", type: "number", required: false }
                 ]
-            }
-        ];
-    }
-
-    getAvailableTriggers(): Trigger[] {
-        return [
-            {
-                id: "event_started",
-                name: "Event Started",
-                description: "Triggers when a calendar event begins.",
-                type: "polling"
             }
         ];
     }
