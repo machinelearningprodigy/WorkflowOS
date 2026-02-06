@@ -7,9 +7,14 @@ export class NotionProvider extends BaseProvider {
     private clientId = process.env.NOTION_CLIENT_ID!;
     private clientSecret = process.env.NOTION_CLIENT_SECRET!;
 
-    getAuthUrl(redirectUri: string, state: string): string {
+    override isConfigured(): boolean {
+        return !!this.clientId && !!this.clientSecret;
+    }
+
+    getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string {
+        const clientId = overrides?.clientId || this.clientId;
         const params = new URLSearchParams({
-            client_id: this.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
             owner: 'user',
@@ -18,8 +23,10 @@ export class NotionProvider extends BaseProvider {
         return `https://api.notion.com/v1/oauth/authorize?${params.toString()}`;
     }
 
-    async exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenResponse> {
-        const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    async exchangeCodeForTokens(code: string, redirectUri: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = overrides?.clientId || this.clientId;
+        const clientSecret = overrides?.clientSecret || this.clientSecret;
+        const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
         const response = await fetch('https://api.notion.com/v1/oauth/token', {
             method: 'POST',
             headers: {

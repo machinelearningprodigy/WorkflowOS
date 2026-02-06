@@ -2,32 +2,53 @@ import { BaseProvider, Action, Trigger, TokenResponse } from '../base.provider';
 
 export class GoogleSheetsProvider extends BaseProvider {
     name = 'Google Sheets';
-    type = 'google-sheets';
+    type = 'SPREADSHEET';
 
-    getAuthUrl(redirectUri: string, state: string): string {
-        const clientId = process.env.GOOGLE_CLIENT_ID;
-        const scope = 'https://www.googleapis.com/auth/spreadsheets';
-        return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${state}`;
+    private clientId = process.env.GOOGLE_CLIENT_ID;
+    private clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    private scopes = [
+        'https://www.googleapis.com/auth/spreadsheets',
+    ];
+
+    override isConfigured(): boolean {
+        return !!this.clientId && !!this.clientSecret;
     }
 
-    async exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenResponse> {
+    getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string {
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: this.scopes.join(' '),
+            access_type: 'offline',
+            prompt: 'consent',
+            state,
+        });
+
+        return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    }
+
+    async exchangeCodeForTokens(code: string, redirectUri: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const clientSecret = (overrides?.clientSecret || this.clientSecret) as string;
+
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
                 code,
-                client_id: process.env.GOOGLE_CLIENT_ID,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                client_id: clientId,
+                client_secret: clientSecret,
                 redirect_uri: redirectUri,
                 grant_type: 'authorization_code',
             }),
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to exchange code for token');
-        }
-
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error_description || data.error || 'Failed to exchange code for token');
+
         return {
             accessToken: data.access_token,
             refreshToken: data.refresh_token,
@@ -37,14 +58,17 @@ export class GoogleSheetsProvider extends BaseProvider {
         };
     }
 
-    async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
+    async refreshAccessToken(refreshToken: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const clientSecret = (overrides?.clientSecret || this.clientSecret) as string;
+
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
                 refresh_token: refreshToken,
-                client_id: process.env.GOOGLE_CLIENT_ID,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                client_id: clientId,
+                client_secret: clientSecret,
                 grant_type: 'refresh_token',
             }),
         });

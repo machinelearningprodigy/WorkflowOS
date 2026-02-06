@@ -4,16 +4,21 @@ export class GmailProvider extends BaseProvider {
     name = 'Gmail';
     type = 'EMAIL';
 
-    private clientId = process.env.GOOGLE_CLIENT_ID!;
-    private clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+    private clientId = process.env.GOOGLE_CLIENT_ID;
+    private clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     private scopes = [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/gmail.readonly',
     ];
 
-    getAuthUrl(redirectUri: string, state: string): string {
+    override isConfigured(): boolean {
+        return !!this.clientId && !!this.clientSecret;
+    }
+
+    getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string {
+        const clientId = (overrides?.clientId || this.clientId) as string;
         const params = new URLSearchParams({
-            client_id: this.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
             scope: this.scopes.join(' '),
@@ -25,14 +30,17 @@ export class GmailProvider extends BaseProvider {
         return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     }
 
-    async exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenResponse> {
+    async exchangeCodeForTokens(code: string, redirectUri: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const clientSecret = (overrides?.clientSecret || this.clientSecret) as string;
+
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                 code,
-                client_id: this.clientId,
-                client_secret: this.clientSecret,
+                client_id: clientId,
+                client_secret: clientSecret,
                 redirect_uri: redirectUri,
                 grant_type: 'authorization_code',
             }),
@@ -55,14 +63,17 @@ export class GmailProvider extends BaseProvider {
         };
     }
 
-    async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
+    async refreshAccessToken(refreshToken: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = (overrides?.clientId || this.clientId) as string;
+        const clientSecret = (overrides?.clientSecret || this.clientSecret) as string;
+
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                 refresh_token: refreshToken,
-                client_id: this.clientId,
-                client_secret: this.clientSecret,
+                client_id: clientId,
+                client_secret: clientSecret,
                 grant_type: 'refresh_token',
             }),
         });

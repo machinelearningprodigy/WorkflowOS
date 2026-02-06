@@ -32,6 +32,7 @@ export const integrationRouter = createTRPCRouter({
             type: provider.type,
             description: `Connect to ${provider.name} to extend your workflows.`,
             auth_type: (provider as any).getAuthUrl ? 'oauth2' : 'api_key', // Heuristic
+            is_configured: provider.isConfigured(),
         }));
         return providers;
     }),
@@ -42,6 +43,8 @@ export const integrationRouter = createTRPCRouter({
             z.object({
                 provider: z.string(),
                 redirectUrl: z.string().optional(),
+                clientId: z.string().optional(),
+                clientSecret: z.string().optional(),
             })
         )
         .mutation(async ({ input }) => {
@@ -50,10 +53,22 @@ export const integrationRouter = createTRPCRouter({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found' });
             }
 
+            if (!provider.isConfigured() && !input.clientId) {
+                return {
+                    url: null,
+                    unconfigured: true,
+                    message: `This provider (${provider.name}) is not configured on the server.`
+                };
+            }
+
             const redirectUri = input.redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/callback/${input.provider}`;
             const state = Math.random().toString(36).substring(7); // Simple state for CSRF
 
-            const url = provider.getAuthUrl(redirectUri, state);
+            // Store custom credentials in session or pass them back somehow?
+            // OAuth flow will redirect back, we need these credentials on the callback too.
+            // For now, let's assume we use standard ones if available, or error.
+
+            const url = provider.getAuthUrl(redirectUri, state, { clientId: input.clientId });
             return { url, state };
         }),
 
@@ -195,7 +210,10 @@ export const integrationRouter = createTRPCRouter({
             if (!isValid && connection.refresh_token) {
                 // Try to refresh
                 try {
-                    const newTokens = await provider.refreshAccessToken(connection.refresh_token);
+                    const newTokens = await provider.refreshAccessToken(connection.refresh_token, {
+                        clientId: connection.client_id,
+                        clientSecret: connection.client_secret
+                    });
                     await ctx.supabase
                         .from('connections')
                         .update({

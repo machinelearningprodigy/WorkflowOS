@@ -5,9 +5,20 @@ export class StripeProvider extends BaseProvider {
     type = 'stripe';
     override authType: 'oauth2' | 'api_key' | 'basic' = 'api_key';
 
-    getAuthUrl(redirectUri: string, state: string): string {
-        const clientId = process.env.STRIPE_CLIENT_ID;
-        return `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${clientId}&scope=read_write&redirect_uri=${redirectUri}&state=${state}`;
+    override isConfigured(): boolean {
+        return !!process.env.STRIPE_CLIENT_ID && !!process.env.STRIPE_SECRET_KEY;
+    }
+
+    getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string {
+        const clientId = overrides?.clientId || process.env.STRIPE_CLIENT_ID;
+        const params = new URLSearchParams({
+            response_type: 'code',
+            client_id: clientId || '',
+            scope: 'read_write',
+            redirect_uri: redirectUri,
+            state,
+        });
+        return `https://connect.stripe.com/oauth/authorize?${params.toString()}`;
     }
 
     async exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenResponse> {

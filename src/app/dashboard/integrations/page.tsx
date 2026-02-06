@@ -24,7 +24,7 @@ const PROVIDER_ICONS: Record<string, string> = {
     'github': "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
     'discord': "https://upload.wikimedia.org/wikipedia/commons/7/71/Discord_Logo_Sans_Logo.svg",
     'google-sheets': "https://upload.wikimedia.org/wikipedia/commons/3/30/Google_Sheets_logo_%282014-2020%29.svg",
-    'notion': "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg",
+    'notion': "https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
     'stripe': "https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg",
     'twilio': "https://upload.wikimedia.org/wikipedia/commons/7/72/Twilio_logo.svg",
     'google-drive': "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg",
@@ -37,7 +37,22 @@ const PROVIDER_ICONS: Record<string, string> = {
     'dropbox': "https://upload.wikimedia.org/wikipedia/commons/7/78/Dropbox_Icon.svg",
     'whatsapp': "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
     'paypal': "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg",
+    'google-calendar': "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg",
+    'google-forms': "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_Forms_logo_%282014-2020%29.svg",
+    'webhook': "https://upload.wikimedia.org/wikipedia/commons/f/f0/Ic_webhooks_48px.svg",
+    'calendly': "https://cdn.worldvectorlogo.com/logos/calendly.svg",
+    'linkedin': "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png",
+    'instagram-for-business': "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
+    'microsoft-excel': "https://upload.wikimedia.org/wikipedia/commons/3/34/Microsoft_Office_Excel_%282019%E2%80%93present%29.svg",
+    'onedrive': "https://upload.wikimedia.org/wikipedia/commons/3/3c/Microsoft_Office_OneDrive_%282019%E2%80%93present%29.svg",
+    'outlook-calendar': "https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg",
 };
+
+const POPULARITY_ORDER = [
+    'gmail', 'google-sheets', 'slack', 'stripe', 'github',
+    'notion', 'airtable', 'hubspot', 'openai', 'google-drive',
+    'google-calendar', 'whatsapp', 'discord', 'webhook', 'shopify'
+];
 
 export default function IntegrationsPage() {
     const { toast } = useToast()
@@ -50,6 +65,29 @@ export default function IntegrationsPage() {
     const [selectedProvider, setSelectedProvider] = useState<any>(null)
     const [apiKey, setApiKey] = useState("")
     const [isConnecting, setIsConnecting] = useState(false)
+
+    // For Custom OAuth Dialog
+    const [customOAuthDialogOpen, setCustomOAuthDialogOpen] = useState(false)
+    const [customClientId, setCustomClientId] = useState("")
+    const [customClientSecret, setCustomClientSecret] = useState("")
+
+    // Persistence: Load saved credentials when selectedProvider changes
+    React.useEffect(() => {
+        if (selectedProvider) {
+            const isGoogle = selectedProvider.slug.includes('google') || selectedProvider.slug === 'gmail'
+            const storageKey = isGoogle ? 'oauth_config_google' : `oauth_config_${selectedProvider.slug}`
+
+            const saved = localStorage.getItem(storageKey)
+            if (saved) {
+                const { clientId, clientSecret } = JSON.parse(saved)
+                setCustomClientId(clientId || "")
+                setCustomClientSecret(clientSecret || "")
+            } else {
+                setCustomClientId("")
+                setCustomClientSecret("")
+            }
+        }
+    }, [selectedProvider])
 
     // Data Queries
     const { data: providers = [], isLoading: providersLoading } = trpc.integration.getProviders.useQuery()
@@ -71,11 +109,29 @@ export default function IntegrationsPage() {
     }, [providers])
 
     const filteredProviders = useMemo(() => {
-        return providers.filter(p => {
+        const filtered = providers.filter(p => {
             const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 p.slug.toLowerCase().includes(searchTerm.toLowerCase())
             const matchesCategory = activeCategory === "All" || p.type === activeCategory
             return matchesSearch && matchesCategory
+        })
+
+        // Sort by popularity order, then alphabetically for the rest
+        return filtered.sort((a, b) => {
+            const indexA = POPULARITY_ORDER.indexOf(a.slug)
+            const indexB = POPULARITY_ORDER.indexOf(b.slug)
+
+            // If both are in popularity list, sort by list position
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB
+
+            // If only A is in list, it comes first
+            if (indexA !== -1) return -1
+
+            // If only B is in list, it comes first
+            if (indexB !== -1) return 1
+
+            // Otherwise sort alphabetically
+            return a.name.localeCompare(b.name)
         })
     }, [providers, searchTerm, activeCategory])
 
@@ -87,11 +143,57 @@ export default function IntegrationsPage() {
         }
 
         try {
-            const { url } = await oauthMutation.mutateAsync({ provider: provider.slug })
+            const origin = window.location.origin.replace(/\/+$/, '')
+            const redirectUrl = `${origin}/api/integrations/callback/${provider.slug}`
+            const { url, unconfigured } = await oauthMutation.mutateAsync({
+                provider: provider.slug,
+                clientId: customClientId,
+                clientSecret: customClientSecret,
+                redirectUrl: redirectUrl
+            })
+
+            if (unconfigured) {
+                setSelectedProvider(provider)
+                setCustomOAuthDialogOpen(true)
+                return
+            }
+
             if (url) {
                 window.location.href = url
             } else {
-                toast({ title: "OAuth Not Configured", description: `Please set up environment variables for ${provider.name}`, variant: "destructive" })
+                toast({ title: "OAuth Configuration Missing", description: `Please provide your and client secret to connect ${provider.name}`, variant: "destructive" })
+            }
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message, variant: "destructive" })
+        }
+    }
+
+    const submitCustomOAuth = async () => {
+        if (!customClientId || !customClientSecret) return
+        try {
+            const origin = window.location.origin.replace(/\/+$/, '')
+            const redirectUrl = `${origin}/api/integrations/callback/${selectedProvider.slug}`
+            const { url } = await oauthMutation.mutateAsync({
+                provider: selectedProvider.slug,
+                clientId: customClientId,
+                clientSecret: customClientSecret,
+                redirectUrl: redirectUrl
+            })
+            if (url) {
+                // Store custom credentials in cookies for the callback route
+                const isGoogle = selectedProvider.slug.includes('google') || selectedProvider.slug === 'gmail'
+                const storageKey = isGoogle ? 'oauth_config_google' : `oauth_config_${selectedProvider.slug}`
+
+                localStorage.setItem(storageKey, JSON.stringify({
+                    clientId: customClientId,
+                    clientSecret: customClientSecret
+                }))
+
+                const cookiePrefix = `oauth_custom_${selectedProvider.slug}`;
+                document.cookie = `${cookiePrefix}_cid=${customClientId}; path=/; max-age=3600; SameSite=Lax`;
+                document.cookie = `${cookiePrefix}_sec=${customClientSecret}; path=/; max-age=3600; SameSite=Lax`;
+
+                window.location.href = url
             }
         } catch (err: any) {
             toast({ title: "Error", description: err.message, variant: "destructive" })
@@ -315,6 +417,63 @@ export default function IntegrationsPage() {
                         >
                             {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
                             Secure Connection
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Custom OAuth Connection Dialog */}
+            <Dialog open={customOAuthDialogOpen} onOpenChange={setCustomOAuthDialogOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-slate-100 p-2 border">
+                                <img src={PROVIDER_ICONS[selectedProvider?.slug]} className="h-full w-full object-contain" />
+                            </div>
+                            Connect Your {selectedProvider?.name} Account
+                        </DialogTitle>
+                        <DialogDescription className="text-xs font-semibold text-slate-600">
+                            Please select the account you want to connect. We've autofilled the technical details for you.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-widest text-slate-400 flex justify-between">
+                                Client ID
+                                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline lowercase font-medium normal-case">Get from Google Console</a>
+                            </Label>
+                            <Input
+                                placeholder="e.g. 742398457239-xxxxxxxx.apps.googleusercontent.com"
+                                value={customClientId}
+                                onChange={(e) => setCustomClientId(e.target.value)}
+                                className="rounded-xl border-slate-200"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Client Secret</Label>
+                            <Input
+                                type="password"
+                                placeholder="e.g. GOCSPX-xxxxxxxxxxxxxxxx"
+                                value={customClientSecret}
+                                onChange={(e) => setCustomClientSecret(e.target.value)}
+                                className="rounded-xl border-slate-200"
+                            />
+                        </div>
+                        <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+                            <p className="text-[10px] text-indigo-700 font-medium">
+                                <strong className="block mb-1">Redirect URI:</strong>
+                                <code>{typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : ''}/api/integrations/callback/{selectedProvider?.slug}</code>
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setCustomOAuthDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
+                        <Button
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 shadow-lg shadow-indigo-200"
+                            onClick={submitCustomOAuth}
+                            disabled={!customClientId || !customClientSecret || oauthMutation.isLoading}
+                        >
+                            {oauthMutation.isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                            Select Account & Connect
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -7,9 +7,9 @@ export interface IntegrationProvider {
     authType: 'oauth2' | 'api_key' | 'basic';
 
     // OAuth configuration
-    getAuthUrl(redirectUri: string, state: string): string;
-    exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenResponse>;
-    refreshAccessToken(refreshToken: string): Promise<TokenResponse>;
+    getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string;
+    exchangeCodeForTokens(code: string, redirectUri: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse>;
+    refreshAccessToken(refreshToken: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse>;
 
     // Connection testing
     testConnection(accessToken: string): Promise<boolean>;
@@ -19,6 +19,9 @@ export interface IntegrationProvider {
 
     // Available triggers
     getAvailableTriggers(): Trigger[];
+
+    // Configuration check
+    isConfigured(): boolean;
 
     // Execute action
     executeAction(action: string, config: any, accessToken: string): Promise<any>;
@@ -59,15 +62,15 @@ export abstract class BaseProvider implements IntegrationProvider {
     abstract type: string;
     authType: 'oauth2' | 'api_key' | 'basic' = 'oauth2';
 
-    getAuthUrl(_redirectUri: string, _state: string): string {
+    getAuthUrl(_redirectUri: string, _state: string, _overrides?: { clientId?: string }): string {
         return '';
     }
 
-    async exchangeCodeForTokens(_code: string, _redirectUri: string): Promise<TokenResponse> {
+    async exchangeCodeForTokens(_code: string, _redirectUri: string, _overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
         return { accessToken: '' };
     }
 
-    async refreshAccessToken(_refreshToken: string): Promise<TokenResponse> {
+    async refreshAccessToken(_refreshToken: string, _overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
         return { accessToken: '' };
     }
 
@@ -81,6 +84,10 @@ export abstract class BaseProvider implements IntegrationProvider {
 
     getAvailableTriggers(): Trigger[] {
         return [];
+    }
+
+    isConfigured(): boolean {
+        return true;
     }
 
     async executeAction(_action: string, _config: any, _accessToken: string): Promise<any> {

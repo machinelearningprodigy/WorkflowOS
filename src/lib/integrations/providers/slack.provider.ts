@@ -8,9 +8,14 @@ export class SlackProvider extends BaseProvider {
     private clientSecret = process.env.SLACK_CLIENT_SECRET!;
     private scopes = ['chat:write', 'channels:read', 'users:read'];
 
-    getAuthUrl(redirectUri: string, state: string): string {
+    override isConfigured(): boolean {
+        return !!this.clientId && !!this.clientSecret;
+    }
+
+    getAuthUrl(redirectUri: string, state: string, overrides?: { clientId?: string }): string {
+        const clientId = overrides?.clientId || this.clientId;
         const params = new URLSearchParams({
-            client_id: this.clientId,
+            client_id: clientId,
             redirect_uri: redirectUri,
             scope: this.scopes.join(' '),
             state,
@@ -18,11 +23,13 @@ export class SlackProvider extends BaseProvider {
         return `https://slack.com/oauth/v2/authorize?${params.toString()}`;
     }
 
-    async exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenResponse> {
+    async exchangeCodeForTokens(code: string, redirectUri: string, overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
+        const clientId = overrides?.clientId || this.clientId;
+        const clientSecret = overrides?.clientSecret || this.clientSecret;
         const params = new URLSearchParams({
             code,
-            client_id: this.clientId,
-            client_secret: this.clientSecret,
+            client_id: clientId,
+            client_secret: clientSecret,
             redirect_uri: redirectUri,
         });
 
@@ -44,7 +51,7 @@ export class SlackProvider extends BaseProvider {
         };
     }
 
-    async refreshAccessToken(_refreshToken: string): Promise<TokenResponse> {
+    async refreshAccessToken(_refreshToken: string, _overrides?: { clientId?: string, clientSecret?: string }): Promise<TokenResponse> {
         // Slack rotation logic if enabled
         return { accessToken: '' }; // Not implemented for simple bot tokens
     }

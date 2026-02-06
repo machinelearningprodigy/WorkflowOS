@@ -32,8 +32,17 @@ export async function GET(
     }
 
     try {
-        const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/callback/${providerSlug}`;
-        const tokens = await provider.exchangeCodeForTokens(code, redirectUri);
+        const origin = request.nextUrl.origin.replace(/\/+$/, '');
+        const redirectUri = `${origin}/api/integrations/callback/${providerSlug}`;
+
+        // Check for custom credentials in cookies
+        const customClientId = request.cookies.get(`oauth_custom_${providerSlug}_cid`)?.value;
+        const customClientSecret = request.cookies.get(`oauth_custom_${providerSlug}_sec`)?.value;
+
+        const tokens = await provider.exchangeCodeForTokens(code, redirectUri, {
+            clientId: customClientId,
+            clientSecret: customClientSecret
+        });
 
         const { error: upsertError } = await supabase
             .from('connections')
@@ -46,6 +55,8 @@ export async function GET(
                 expires_at: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString() : null,
                 scopes: tokens.scope ? tokens.scope.split(' ') : [],
                 account_id: tokens.providerUserId,
+                client_id: customClientId,
+                client_secret: customClientSecret,
                 status: 'connected',
                 updated_at: new Date().toISOString(),
             }, {

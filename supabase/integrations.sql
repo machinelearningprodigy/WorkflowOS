@@ -1,6 +1,6 @@
 -- INTEGRATION PROVIDERS (System Catalog)
 -- Lists all supported services (e.g. Google Drive, Slack, Notion) available in the platform
-create table public.integration_providers (
+create table if not exists public.integration_providers (
   id uuid default uuid_generate_v4() primary key,
   slug text unique not null, -- e.g. 'google-calendar', 'slack', 'notion'
   name text not null, -- e.g. 'Google Calendar'
@@ -22,6 +22,7 @@ create table public.integration_providers (
 -- RLS for Providers
 alter table public.integration_providers enable row level security;
 -- Public/Authenticated users can view available providers
+drop policy if exists "Users can view active providers" on public.integration_providers;
 create policy "Users can view active providers" 
   on public.integration_providers for select 
   using (is_active = true);
@@ -29,7 +30,7 @@ create policy "Users can view active providers"
 
 -- CONNECTIONS (User Credentials)
 -- Stores the actual authenticated sessions/credentials for a user's integration
-create table public.connections (
+create table if not exists public.connections (
   id uuid default uuid_generate_v4() primary key,
   
   -- Link to User
@@ -55,6 +56,8 @@ create table public.connections (
   -- Account Metadata (Fetched from the provider)
   -- Stores info like account_email, avatar_url, workspace_id, etc.
   account_id text, -- The provider's unique ID for this user/account
+  client_id text, -- For custom OAuth credentials
+  client_secret text, -- For custom OAuth credentials
   profile_data jsonb default '{}'::jsonb,
   
   -- Status
@@ -69,18 +72,22 @@ create table public.connections (
 -- RLS for Connections
 alter table public.connections enable row level security;
 
+drop policy if exists "Users can view own connections" on public.connections;
 create policy "Users can view own connections" 
   on public.connections for select 
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own connections" on public.connections;
 create policy "Users can insert own connections" 
   on public.connections for insert 
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own connections" on public.connections;
 create policy "Users can update own connections" 
   on public.connections for update 
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own connections" on public.connections;
 create policy "Users can delete own connections" 
   on public.connections for delete 
   using (auth.uid() = user_id);
@@ -92,7 +99,14 @@ create index if not exists connections_provider_slug_idx on public.connections(p
 create index if not exists connections_status_idx on public.connections(status);
 
 -- UNIQUE CONSTRAINT for upserts
-alter table public.connections add constraint connections_user_provider_account_key unique (user_id, provider_slug, account_id);
+-- Note: alter table add constraint doesn't have IF NOT EXISTS in all Postgres versions.
+-- We wrap it in a DO block to be safe.
+do $$
+begin
+    if not exists (select 1 from pg_constraint where conname = 'connections_user_provider_account_key') then
+        alter table public.connections add constraint connections_user_provider_account_key unique (user_id, provider_slug, account_id);
+    end if;
+end $$;
 
 -- SEED PROVIDERS
 insert into public.integration_providers (slug, name, description, auth_type)
@@ -114,10 +128,26 @@ on conflict (slug) do update set
 
 -- TRIGGERS
 -- Auto-update updated_at timestamp
+drop trigger if exists update_integration_providers_updated_at on public.integration_providers;
 create trigger update_integration_providers_updated_at
   before update on public.integration_providers
   for each row execute procedure update_updated_at_column();
 
+drop trigger if exists update_connections_updated_at on public.connections;
 create trigger update_connections_updated_at
   before update on public.connections
   for each row execute procedure update_updated_at_column();
+
+-- MIGRATIONS (Ensure columns exist for existing tables)
+do $$
+begin
+    if not exists (select 1 from information_schema.columns where table_name = 'connections' and column_name = 'client_id') then
+        alter table public.connections add column client_id text;
+    end if;
+    if not exists (select 1 from information_schema.columns where table_name = 'connections' and column_name = 'client_secret') then
+        alter table public.connections add column client_secret text;
+    end if;
+end $$;
+
+-- Reload PostgREST schema cache
+notify pgrst, 'reload schema';
