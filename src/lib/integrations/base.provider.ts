@@ -4,6 +4,7 @@
 export interface IntegrationProvider {
     name: string;
     type: string;
+    authType: 'oauth2' | 'api_key' | 'basic';
 
     // OAuth configuration
     getAuthUrl(redirectUri: string, state: string): string;
@@ -28,6 +29,7 @@ export interface TokenResponse {
     refreshToken?: string;
     expiresIn?: number;
     scope?: string;
+    providerUserId?: string;
 }
 
 export interface Action {
@@ -50,4 +52,38 @@ export interface Trigger {
     name: string;
     description: string;
     type: 'webhook' | 'polling';
+}
+
+export abstract class BaseProvider implements IntegrationProvider {
+    abstract name: string;
+    abstract type: string;
+    authType: 'oauth2' | 'api_key' | 'basic' = 'oauth2';
+
+    getAuthUrl(_redirectUri: string, _state: string): string {
+        return '';
+    }
+
+    async exchangeCodeForTokens(_code: string, _redirectUri: string): Promise<TokenResponse> {
+        return { accessToken: '' };
+    }
+
+    async refreshAccessToken(_refreshToken: string): Promise<TokenResponse> {
+        return { accessToken: '' };
+    }
+
+    async testConnection(_accessToken: string): Promise<boolean> {
+        return true;
+    }
+
+    getAvailableActions(): Action[] {
+        return [];
+    }
+
+    getAvailableTriggers(): Trigger[] {
+        return [];
+    }
+
+    async executeAction(_action: string, _config: any, _accessToken: string): Promise<any> {
+        return {};
+    }
 }

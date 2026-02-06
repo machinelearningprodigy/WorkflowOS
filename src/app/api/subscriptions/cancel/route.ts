@@ -1,18 +1,19 @@
-// Subscription cancel API - Cancel subscription
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
+import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/services/stripe.service';
 import { prisma } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
-    const { userId } = auth();
-    if (!userId) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
         const subscription = await prisma.subscription.findFirst({
-            where: { userId, status: 'active' },
+            where: { userId: user.id, status: 'active' },
         });
 
         if (!subscription) {
@@ -27,7 +28,8 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

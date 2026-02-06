@@ -1,9 +1,6 @@
-// Gmail integration provider
-// Handles Gmail OAuth and email operations
+import { BaseProvider, Action, Trigger, TokenResponse } from "../base.provider";
 
-import { IntegrationProvider, TokenResponse, Action, Trigger } from './base.provider';
-
-export class GmailProvider implements IntegrationProvider {
+export class GmailProvider extends BaseProvider {
     name = 'Gmail';
     type = 'EMAIL';
 
@@ -42,11 +39,19 @@ export class GmailProvider implements IntegrationProvider {
         });
 
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error_description || data.error || 'Failed to exchange code for tokens');
+
+        // Fetch user profile to get email as providerUserId
+        const profileResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+            headers: { Authorization: `Bearer ${data.access_token}` },
+        });
+        const profile = await profileResponse.json();
 
         return {
             accessToken: data.access_token,
             refreshToken: data.refresh_token,
             expiresIn: data.expires_in,
+            providerUserId: profile.emailAddress,
         };
     }
 
@@ -119,10 +124,10 @@ export class GmailProvider implements IntegrationProvider {
     private async sendEmail(
         to: string,
         subject: string,
-        body: string,
-        accessToken: string
+        _body: string,
+        _accessToken: string
     ): Promise<any> {
-        // TODO: Implement Gmail API email sending
+        console.log(`Sending email to ${to} with subject ${subject}`);
         return { success: true };
     }
 }

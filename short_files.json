@@ -1,0 +1,10 @@
+[
+  {
+    "path": "src\\app\\api\\templates\\categories\\route.ts",
+    "lines": 14
+  },
+  {
+    "path": "src\\app\\api\\templates\\industries\\route.ts",
+    "lines": 11
+  }
+]

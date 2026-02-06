@@ -1,26 +1,24 @@
-// Pause workflow API - Pause/resume workflow
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { prisma } from '@/lib/db';
 
-export async function POST(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-) {
-    const { userId } = auth();
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+
+/**
+ * Route: POST /api/workflows/[id]/pause
+ * Pause a workflow.
+ */
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const workflowId = params.id;
-    const body = await request.json();
-    const { paused } = body;
+    await prisma.workflow.update({
+        where: { id: params.id, creatorId: user.id },
+        data: { status: 'paused' }
+    })
 
-    // Update workflow status
-    const workflow = await prisma.workflow.update({
-        where: { id: workflowId, userId },
-        data: { isPaused: paused },
-    });
-
-    return NextResponse.json({ success: true, workflow });
+    return NextResponse.json({ message: 'Workflow paused' })
 }

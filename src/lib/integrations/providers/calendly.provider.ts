@@ -1,4 +1,30 @@
-// Calendly Provider - Integration with Calendly scheduling
-// Actions: Create event type, get availability
-// Triggers: New event scheduled, event cancelled
-// API key authentication
+import { BaseProvider, Action, Trigger } from "../base.provider";
+
+export class CalendlyProvider extends BaseProvider {
+    name = "Calendly";
+    type = "BOOKING";
+
+    getAvailableActions(): Action[] {
+        return [
+            {
+                id: "get_event",
+                name: "Get Event Details",
+                description: "Retrieve details for a specific event.",
+                inputs: [
+                    { id: "uuid", name: "Event UUID", type: "string", required: true }
+                ]
+            }
+        ];
+    }
+
+    getAvailableTriggers(): Trigger[] {
+        return [
+            {
+                id: "invitee_created",
+                name: "Invitee Created",
+                description: "Triggers when a new meeting is scheduled.",
+                type: "webhook"
+            }
+        ];
+    }
+}

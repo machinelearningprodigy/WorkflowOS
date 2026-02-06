@@ -1,3 +1,47 @@
-// useLocalStorage hook - Persist state to localStorage
-// Syncs state with localStorage automatically
-// Returns [value, setValue] like useState
+"use client"
+
+import { useState, useEffect } from "react"
+
+/**
+ * Custom hook to manage state in local storage.
+ * Synchronizes state with localStorage and across tabs.
+ */
+export function useLocalStorage<T>(key: string, initialValue: T) {
+    // Get stored value from localStorage or use initialValue
+    const readValue = (): T => {
+        if (typeof window === "undefined") {
+            return initialValue
+        }
+
+        try {
+            const item = window.localStorage.getItem(key)
+            return item ? (JSON.parse(item) as T) : initialValue
+        } catch (error) {
+            console.warn(`Error reading localStorage key “${key}”:`, error)
+            return initialValue
+        }
+    }
+
+    const [storedValue, setStoredValue] = useState<T>(readValue)
+
+    // Return a wrapped version of useState's setter function that
+    // persists the new value to localStorage.
+    const setValue = (value: T | ((val: T) => T)) => {
+        try {
+            const valueToStore = value instanceof Function ? value(storedValue) : value
+            setStoredValue(valueToStore)
+            if (typeof window !== "undefined") {
+                window.localStorage.setItem(key, JSON.stringify(valueToStore))
+            }
+        } catch (error) {
+            console.warn(`Error setting localStorage key “${key}”:`, error)
+        }
+    }
+
+    useEffect(() => {
+        setStoredValue(readValue())
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    return [storedValue, setValue] as const
+}

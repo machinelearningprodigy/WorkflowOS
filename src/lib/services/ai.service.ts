@@ -1,11 +1,7 @@
 // AI service for workflow generation and suggestions
-// Uses Claude (primary) and GPT-4 (fallback)
+// Uses Hugging Face
 
-import Anthropic from '@anthropic-ai/sdk';
-
-const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-});
+import { hf, HF_MODEL } from '../huggingface';
 
 /**
  * Generate workflow from natural language description
@@ -15,10 +11,7 @@ export async function generateWorkflowFromDescription(
     industry?: string
 ): Promise<any> {
     try {
-        const prompt = `You are an expert workflow automation assistant. Generate a detailed workflow configuration from this description:
-
-Description: ${description}
-Industry: ${industry || 'General'}
+        const systemPrompt = `You are an expert workflow automation assistant. Generate a detailed workflow configuration from this description.
 
 Return a JSON object with:
 - name: workflow name
@@ -34,21 +27,20 @@ Each step should have:
 - config: action configuration
 - condition: optional condition for execution
 
-Make it practical and ready to use.`;
+Make it practical and ready to use. Output ONLY the JSON object.`;
 
-        const message = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 4096,
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
             messages: [
-                {
-                    role: 'user',
-                    content: prompt,
-                },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Description: ${description}\nIndustry: ${industry || 'General'}` }
             ],
+            max_tokens: 2048,
         });
 
-        // TODO: Parse and validate the response
-        return null;
+        const content = response.choices[0].message.content;
+        const jsonStr = content?.replace(/```json\n?|\n?```/g, "").trim();
+        return jsonStr ? JSON.parse(jsonStr) : null;
     } catch (error) {
         console.error('AI workflow generation error:', error);
         throw new Error('Failed to generate workflow');
@@ -60,25 +52,20 @@ Make it practical and ready to use.`;
  */
 export async function getWorkflowOptimizations(workflow: any): Promise<string[]> {
     try {
-        const prompt = `Analyze this workflow and provide optimization suggestions:
+        const systemPrompt = `Analyze the provided workflow and provide 3-5 specific, actionable suggestions to improve efficiency, reduce errors, or add useful features. Return as a JSON array of strings. Output ONLY the JSON array.`;
 
-${JSON.stringify(workflow, null, 2)}
-
-Provide 3-5 specific, actionable suggestions to improve efficiency, reduce errors, or add useful features.`;
-
-        const message = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 2048,
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
             messages: [
-                {
-                    role: 'user',
-                    content: prompt,
-                },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: JSON.stringify(workflow, null, 2) }
             ],
+            max_tokens: 1024,
         });
 
-        // TODO: Parse suggestions from response
-        return [];
+        const content = response.choices[0].message.content;
+        const jsonStr = content?.replace(/```json\n?|\n?```/g, "").trim();
+        return jsonStr ? JSON.parse(jsonStr) : [];
     } catch (error) {
         console.error('AI optimization error:', error);
         return [];
@@ -90,25 +77,18 @@ Provide 3-5 specific, actionable suggestions to improve efficiency, reduce error
  */
 export async function explainWorkflow(workflow: any): Promise<string> {
     try {
-        const prompt = `Explain this workflow in simple, plain English that a non-technical person can understand:
+        const systemPrompt = `Explain the provided workflow in simple, plain English that a non-technical person can understand. Focus on what it does, when it runs, and what the outcome is.`;
 
-${JSON.stringify(workflow, null, 2)}
-
-Focus on what it does, when it runs, and what the outcome is.`;
-
-        const message = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 1024,
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
             messages: [
-                {
-                    role: 'user',
-                    content: prompt,
-                },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: JSON.stringify(workflow, null, 2) }
             ],
+            max_tokens: 1024,
         });
 
-        // TODO: Extract explanation from response
-        return '';
+        return response.choices[0].message.content || '';
     } catch (error) {
         console.error('AI explanation error:', error);
         return 'Unable to generate explanation';
@@ -123,29 +103,20 @@ export async function explainError(
     context?: any
 ): Promise<{ explanation: string; suggestedFix: string }> {
     try {
-        const prompt = `A workflow failed with this error:
+        const systemPrompt = `Explain the provided error in simple terms and suggest how to fix it. Return as a JSON with keys "explanation" and "suggestedFix". Output ONLY the JSON object.`;
 
-Error: ${error}
-Context: ${context ? JSON.stringify(context, null, 2) : 'None'}
-
-Explain what went wrong in simple terms and suggest how to fix it.`;
-
-        const message = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 1024,
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
             messages: [
-                {
-                    role: 'user',
-                    content: prompt,
-                },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Error: ${error}\nContext: ${context ? JSON.stringify(context, null, 2) : 'None'}` }
             ],
+            max_tokens: 1024,
         });
 
-        // TODO: Parse explanation and fix from response
-        return {
-            explanation: '',
-            suggestedFix: '',
-        };
+        const content = response.choices[0].message.content;
+        const jsonStr = content?.replace(/```json\n?|\n?```/g, "").trim();
+        return jsonStr ? JSON.parse(jsonStr) : { explanation: 'Unable to explain error', suggestedFix: 'Please check the error logs' };
     } catch (error) {
         console.error('AI error explanation error:', error);
         return {
@@ -160,25 +131,20 @@ Explain what went wrong in simple terms and suggest how to fix it.`;
  */
 export async function chatWithAssistant(
     message: string,
-    conversationHistory?: Array<{ role: string; content: string }>
+    conversationHistory?: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>
 ): Promise<string> {
     try {
-        const messages = [
-            ...(conversationHistory || []),
-            {
-                role: 'user' as const,
-                content: message,
-            },
-        ];
-
-        const response = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 2048,
-            messages,
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
+            messages: [
+                { role: 'system', content: 'You are a helpful AI assistant for WorkflowOS.' },
+                ...(conversationHistory || []),
+                { role: 'user', content: message }
+            ],
+            max_tokens: 1024,
         });
 
-        // TODO: Extract response text
-        return '';
+        return response.choices[0].message.content || '';
     } catch (error) {
         console.error('AI chat error:', error);
         return 'Sorry, I encountered an error. Please try again.';

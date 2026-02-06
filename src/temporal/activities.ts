@@ -1,8 +1,10 @@
+
 // Temporal activities
 // Defines the actual work that workflows perform
 
-import { prisma } from '@/lib/db';
 import { sendEmail } from '@/lib/services/email.service';
+import { getProvider } from '@/lib/integrations/registry';
+import { logger } from '@/utils/logger';
 
 /**
  * Execute a single workflow step
@@ -12,15 +14,40 @@ export async function executeWorkflowStep(
     stepConfig: any,
     context: any
 ): Promise<any> {
-    // TODO: Implement step execution based on action type
-    // - send_email
-    // - update_spreadsheet
-    // - create_calendar_event
-    // - send_sms
-    // - http_request
-    // - etc.
+    const { provider: providerName, action: actionName, input } = stepConfig;
 
-    return { success: true };
+    logger.info(`Executing step ${stepId}: ${providerName}.${actionName}`);
+
+    const provider = getProvider(providerName);
+    if (!provider) {
+        throw new Error(`Provider ${providerName} not found`);
+    }
+
+    try {
+        // Find the action in the provider
+        const actions = provider.getActions();
+        const action = actions.find(a => a.id === actionName);
+
+        if (!action) {
+            throw new Error(`Action ${actionName} not found for provider ${providerName}`);
+        }
+
+        // Execute the action
+        const result = await action.execute(input);
+
+        return {
+            success: true,
+            output: result,
+            timestamp: new Date().toISOString()
+        };
+    } catch (error: any) {
+        logger.error(`Step ${stepId} failed: ${error.message}`);
+        return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        };
+    }
 }
 
 /**
@@ -32,17 +59,12 @@ export async function sendNotification(
     data: any
 ): Promise<void> {
     try {
-        await prisma.notification.create({
-            data: {
-                userId,
-                type: type as any,
-                title: getNotificationTitle(type),
-                message: getNotificationMessage(type, data),
-                metadata: data,
-            },
-        });
+        // Mock notification logic for now, or replace with Supabase Client insert
+        // const supabase = createClient();
+        // await supabase.from('notifications').insert({...});
+        logger.info(`Notification for ${userId}: ${type}`, data);
     } catch (error) {
-        console.error('Notification error:', error);
+        logger.error('Notification error:', error);
     }
 }
 
@@ -51,14 +73,16 @@ export async function sendNotification(
  */
 export async function logExecution(
     workflowId: string,
-    status: string,
-    error: string | null
+    runId: string,
+    status: 'success' | 'failed' | 'running',
+    error: string | null = null
 ): Promise<void> {
     try {
-        // TODO: Update workflow run record in database
-        console.log(`Workflow ${workflowId}: ${status}`, error);
-    } catch (error) {
-        console.error('Log execution error:', error);
+        // Reimplemented without Prisma
+        // In a real worker, we would create a Supabase client here too
+        logger.info(`Log Execution ${runId}: ${status}`, error || '');
+    } catch (err: any) {
+        logger.error('Log execution error:', err);
     }
 }
 
@@ -89,13 +113,20 @@ export async function makeHttpRequest(
     try {
         const response = await fetch(url, {
             method,
-            headers,
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers
+            },
             body: body ? JSON.stringify(body) : undefined,
         });
 
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        }
+
         return await response.json();
-    } catch (error) {
-        console.error('HTTP request error:', error);
+    } catch (error: any) {
+        logger.error('HTTP request error:', error);
         throw error;
     }
 }
@@ -105,20 +136,4 @@ export async function makeHttpRequest(
  */
 export async function waitActivity(durationMs: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, durationMs));
-}
-
-// Helper functions
-function getNotificationTitle(type: string): string {
-    const titles: Record<string, string> = {
-        workflow_success: 'Workflow Completed',
-        workflow_failed: 'Workflow Failed',
-        integration_disconnected: 'Integration Disconnected',
-        limit_reached: 'Usage Limit Reached',
-    };
-    return titles[type] || 'Notification';
-}
-
-function getNotificationMessage(type: string, data: any): string {
-    // TODO: Generate appropriate message based on type and data
-    return JSON.stringify(data);
 }

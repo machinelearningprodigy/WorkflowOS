@@ -1,25 +1,12 @@
-// Next.js middleware for authentication and security
-// Runs on every request before reaching the page
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-import { authMiddleware } from '@clerk/nextjs';
-
-export default authMiddleware({
-    // Public routes that don't require authentication
-    publicRoutes: [
-        '/',
-        '/pricing',
-        '/sign-in(.*)',
-        '/sign-up(.*)',
-        '/api/webhooks(.*)',
-    ],
-
-    // Routes that are ignored by the middleware
-    ignoredRoutes: [
-        '/api/webhooks/clerk',
-        '/api/webhooks/stripe',
-    ],
-});
+export async function middleware(request: NextRequest) {
+    return await updateSession(request)
+}
 
 export const config = {
-    matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
-};
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
+}

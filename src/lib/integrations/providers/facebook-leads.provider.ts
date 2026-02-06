@@ -1,4 +1,17 @@
-// Facebook Lead Ads Provider - Integration with Facebook Lead Ads
-// Actions: Get leads
-// Triggers: New lead received
-// OAuth 2.0 authentication
+import { BaseProvider, Action, Trigger } from "../base.provider";
+
+export class FacebookLeadsProvider extends BaseProvider {
+    name = "Facebook Lead Ads";
+    type = "MARKETING";
+
+    getAvailableTriggers(): Trigger[] {
+        return [
+            {
+                id: "new_lead",
+                name: "New Lead",
+                description: "Triggers when a new lead is captured via Facebook Ads.",
+                type: "webhook"
+            }
+        ];
+    }
+}

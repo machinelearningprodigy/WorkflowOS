@@ -1,0 +1,486 @@
+[
+  {
+    "path": "src\\app\\api\\templates\\industries\\route.ts",
+    "size": 336
+  },
+  {
+    "path": "src\\app\\api\\templates\\categories\\route.ts",
+    "size": 489
+  },
+  {
+    "path": "src\\app\\api\\templates\\popular\\route.ts",
+    "size": 715
+  },
+  {
+    "path": "src\\app\\api\\templates\\featured\\route.ts",
+    "size": 735
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\run\\route.ts",
+    "size": 767
+  },
+  {
+    "path": "src\\app\\api\\trpc\\[trpc]\\route.ts",
+    "size": 797
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\route.ts",
+    "size": 818
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\refresh\\route.ts",
+    "size": 830
+  },
+  {
+    "path": "src\\app\\api\\upload\\route.ts",
+    "size": 837
+  },
+  {
+    "path": "src\\app\\api\\socket\\route.ts",
+    "size": 841
+  },
+  {
+    "path": "src\\app\\api\\notifications\\unread-count\\route.ts",
+    "size": 857
+  },
+  {
+    "path": "src\\app\\api\\templates\\[id]\\route.ts",
+    "size": 868
+  },
+  {
+    "path": "src\\app\\api\\notifications\\clear-all\\route.ts",
+    "size": 872
+  },
+  {
+    "path": "src\\app\\api\\notifications\\[id]\\route.ts",
+    "size": 897
+  },
+  {
+    "path": "src\\app\\api\\api-keys\\[id]\\route.ts",
+    "size": 905
+  },
+  {
+    "path": "src\\app\\api\\auth\\callback\\[provider]\\route.ts",
+    "size": 929
+  },
+  {
+    "path": "src\\app\\api\\notifications\\mark-all-read\\route.ts",
+    "size": 982
+  },
+  {
+    "path": "src\\app\\api\\plans\\route.ts",
+    "size": 1003
+  },
+  {
+    "path": "src\\app\\api\\notifications\\[id]\\read\\route.ts",
+    "size": 1005
+  },
+  {
+    "path": "src\\app\\api\\team\\members\\[id]\\route.ts",
+    "size": 1025
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\runs\\[runId]\\route.ts",
+    "size": 1038
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\share\\route.ts",
+    "size": 1048
+  },
+  {
+    "path": "src\\app\\api\\settings\\security\\route.ts",
+    "size": 1078
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\[id]\\logs\\route.ts",
+    "size": 1119
+  },
+  {
+    "path": "src\\app\\api\\notifications\\route.ts",
+    "size": 1151
+  },
+  {
+    "path": "src\\app\\api\\invoices\\route.ts",
+    "size": 1152
+  },
+  {
+    "path": "src\\app\\api\\integrations\\categories\\route.ts",
+    "size": 1161
+  },
+  {
+    "path": "src\\app\\api\\team\\permissions\\route.ts",
+    "size": 1162
+  },
+  {
+    "path": "src\\app\\api\\subscriptions\\cancel\\route.ts",
+    "size": 1164
+  },
+  {
+    "path": "src\\app\\api\\api-keys\\route.ts",
+    "size": 1168
+  },
+  {
+    "path": "src\\app\\api\\invoices\\[id]\\route.ts",
+    "size": 1174
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\schedule\\route.ts",
+    "size": 1177
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\triggers\\route.ts",
+    "size": 1190
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\test\\route.ts",
+    "size": 1209
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\actions\\route.ts",
+    "size": 1216
+  },
+  {
+    "path": "src\\app\\api\\settings\\password\\route.ts",
+    "size": 1250
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\create\\route.ts",
+    "size": 1251
+  },
+  {
+    "path": "src\\app\\api\\settings\\2fa\\route.ts",
+    "size": 1265
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\disconnect\\route.ts",
+    "size": 1275
+  },
+  {
+    "path": "src\\app\\api\\team\\members\\[id]\\role\\route.ts",
+    "size": 1294
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\[id]\\logs\\[logId]\\retry\\route.ts",
+    "size": 1360
+  },
+  {
+    "path": "src\\app\\api\\health\\route.ts",
+    "size": 1371
+  },
+  {
+    "path": "src\\app\\api\\integrations\\route.ts",
+    "size": 1402
+  },
+  {
+    "path": "src\\app\\api\\referrals\\route.ts",
+    "size": 1419
+  },
+  {
+    "path": "src\\app\\api\\team\\route.ts",
+    "size": 1431
+  },
+  {
+    "path": "src\\app\\api\\workflows\\tags\\route.ts",
+    "size": 1451
+  },
+  {
+    "path": "src\\app\\api\\user\\delete\\route.ts",
+    "size": 1454
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\pause\\route.ts",
+    "size": 1471
+  },
+  {
+    "path": "src\\app\\api\\upload\\[fileId]\\route.ts",
+    "size": 1478
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\enable\\route.ts",
+    "size": 1480
+  },
+  {
+    "path": "src\\app\\api\\subscriptions\\route.ts",
+    "size": 1486
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\runs\\route.ts",
+    "size": 1492
+  },
+  {
+    "path": "src\\app\\api\\team\\invite\\[token]\\resend\\route.ts",
+    "size": 1560
+  },
+  {
+    "path": "src\\app\\api\\ai\\generate\\route.ts",
+    "size": 1563
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\runs\\[runId]\\retry\\route.ts",
+    "size": 1576
+  },
+  {
+    "path": "src\\app\\api\\api-keys\\[id]\\regenerate\\route.ts",
+    "size": 1581
+  },
+  {
+    "path": "src\\app\\api\\user\\avatar\\route.ts",
+    "size": 1587
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\runs\\[runId]\\cancel\\route.ts",
+    "size": 1604
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\usage\\route.ts",
+    "size": 1619
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\route.ts",
+    "size": 1623
+  },
+  {
+    "path": "src\\app\\api\\workflows\\bulk-pause\\route.ts",
+    "size": 1642
+  },
+  {
+    "path": "src\\app\\api\\import\\route.ts",
+    "size": 1651
+  },
+  {
+    "path": "src\\app\\api\\sessions\\route.ts",
+    "size": 1653
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\[id]\\test\\route.ts",
+    "size": 1665
+  },
+  {
+    "path": "src\\app\\api\\analytics\\integration-usage\\route.ts",
+    "size": 1666
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\settings\\route.ts",
+    "size": 1678
+  },
+  {
+    "path": "src\\app\\api\\analytics\\export\\route.ts",
+    "size": 1695
+  },
+  {
+    "path": "src\\app\\api\\upload\\image\\route.ts",
+    "size": 1698
+  },
+  {
+    "path": "src\\app\\api\\team\\invite\\[token]\\accept\\route.ts",
+    "size": 1748
+  },
+  {
+    "path": "src\\app\\api\\subscriptions\\portal\\route.ts",
+    "size": 1753
+  },
+  {
+    "path": "src\\app\\api\\analytics\\time-saved\\route.ts",
+    "size": 1757
+  },
+  {
+    "path": "src\\app\\api\\user\\preferences\\route.ts",
+    "size": 1758
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\stats\\route.ts",
+    "size": 1776
+  },
+  {
+    "path": "src\\app\\api\\settings\\notifications\\route.ts",
+    "size": 1777
+  },
+  {
+    "path": "src\\app\\api\\newsletter\\route.ts",
+    "size": 1786
+  },
+  {
+    "path": "src\\app\\api\\templates\\[id]\\use\\route.ts",
+    "size": 1835
+  },
+  {
+    "path": "src\\app\\api\\analytics\\workflow-performance\\route.ts",
+    "size": 1852
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\export\\route.ts",
+    "size": 1862
+  },
+  {
+    "path": "src\\app\\api\\cron\\route.ts",
+    "size": 1890
+  },
+  {
+    "path": "src\\app\\api\\stats\\route.ts",
+    "size": 1892
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\test\\route.ts",
+    "size": 1898
+  },
+  {
+    "path": "src\\app\\api\\workflows\\bulk-delete\\route.ts",
+    "size": 1938
+  },
+  {
+    "path": "src\\app\\api\\team\\invite\\[token]\\route.ts",
+    "size": 1960
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\[id]\\route.ts",
+    "size": 2002
+  },
+  {
+    "path": "src\\app\\api\\settings\\route.ts",
+    "size": 2036
+  },
+  {
+    "path": "src\\app\\api\\audit\\export\\route.ts",
+    "size": 2089
+  },
+  {
+    "path": "src\\app\\api\\organization\\logo\\route.ts",
+    "size": 2096
+  },
+  {
+    "path": "src\\app\\api\\logs\\route.ts",
+    "size": 2143
+  },
+  {
+    "path": "src\\app\\api\\dashboard\\stats\\route.ts",
+    "size": 2161
+  },
+  {
+    "path": "src\\app\\api\\analytics\\roi\\route.ts",
+    "size": 2173
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\versions\\route.ts",
+    "size": 2209
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\execute\\route.ts",
+    "size": 2268
+  },
+  {
+    "path": "src\\app\\api\\subscriptions\\upgrade\\route.ts",
+    "size": 2294
+  },
+  {
+    "path": "src\\app\\api\\api-keys\\create\\route.ts",
+    "size": 2296
+  },
+  {
+    "path": "src\\app\\api\\audit\\route.ts",
+    "size": 2345
+  },
+  {
+    "path": "src\\app\\api\\subscriptions\\create\\route.ts",
+    "size": 2417
+  },
+  {
+    "path": "src\\app\\api\\workflows\\route.ts",
+    "size": 2422
+  },
+  {
+    "path": "src\\app\\api\\workflows\\create\\route.ts",
+    "size": 2427
+  },
+  {
+    "path": "src\\app\\api\\workflows\\import\\route.ts",
+    "size": 2447
+  },
+  {
+    "path": "src\\app\\api\\templates\\route.ts",
+    "size": 2470
+  },
+  {
+    "path": "src\\app\\api\\export\\route.ts",
+    "size": 2486
+  },
+  {
+    "path": "src\\app\\api\\contact\\route.ts",
+    "size": 2508
+  },
+  {
+    "path": "src\\app\\api\\user\\route.ts",
+    "size": 2583
+  },
+  {
+    "path": "src\\app\\api\\feedback\\route.ts",
+    "size": 2599
+  },
+  {
+    "path": "src\\app\\api\\activity\\route.ts",
+    "size": 2674
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\duplicate\\route.ts",
+    "size": 2695
+  },
+  {
+    "path": "src\\app\\api\\metrics\\route.ts",
+    "size": 3021
+  },
+  {
+    "path": "src\\app\\api\\ai\\explain\\route.ts",
+    "size": 3103
+  },
+  {
+    "path": "src\\app\\api\\usage\\route.ts",
+    "size": 3106
+  },
+  {
+    "path": "src\\app\\api\\team\\invite\\route.ts",
+    "size": 3130
+  },
+  {
+    "path": "src\\app\\api\\organization\\route.ts",
+    "size": 3438
+  },
+  {
+    "path": "src\\app\\api\\integrations\\[id]\\connect\\route.ts",
+    "size": 3574
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\clerk\\route.ts",
+    "size": 3656
+  },
+  {
+    "path": "src\\app\\api\\analytics\\dashboard\\route.ts",
+    "size": 3723
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\tags\\route.ts",
+    "size": 4013
+  },
+  {
+    "path": "src\\app\\api\\search\\route.ts",
+    "size": 4107
+  },
+  {
+    "path": "src\\app\\api\\ai\\optimize\\route.ts",
+    "size": 4441
+  },
+  {
+    "path": "src\\app\\api\\ai\\suggest-integrations\\route.ts",
+    "size": 4559
+  },
+  {
+    "path": "src\\app\\api\\webhooks\\stripe\\route.ts",
+    "size": 4639
+  },
+  {
+    "path": "src\\app\\api\\workflows\\[id]\\route.ts",
+    "size": 4681
+  },
+  {
+    "path": "src\\app\\api\\ai\\suggest-steps\\route.ts",
+    "size": 5202
+  }
+]

@@ -1,4 +1,17 @@
-// Toast POS Provider - Integration with Toast POS (restaurants)
-// Actions: Get orders, update menu, manage inventory
-// Triggers: New order, order completed
-// API key authentication
+import { BaseProvider, Action, Trigger } from "../base.provider";
+
+export class ToastPosProvider extends BaseProvider {
+    name = "Toast POS";
+    type = "POS";
+
+    getAvailableTriggers(): Trigger[] {
+        return [
+            {
+                id: "order_placed",
+                name: "Order Placed",
+                description: "Triggers when a new order is received at the POS.",
+                type: "webhook"
+            }
+        ];
+    }
+}

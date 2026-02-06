@@ -1,40 +1,41 @@
-// API key create API - Generate new API key
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { prisma } from '@/lib/db';
-import { encrypt } from '@/lib/security';
-import crypto from 'crypto';
 
+import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { logger } from '@/utils/logger'
+
+/**
+ * Route: POST /api/api-keys/create
+ * Create a new API key.
+ */
 export async function POST(request: NextRequest) {
-    const { userId } = auth();
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json();
-    const { name, permissions, expiresAt } = body;
+    try {
+        const { name } = await request.json()
 
-    // Generate API key
-    const key = `wos_${crypto.randomBytes(32).toString('hex')}`;
-    const hashedKey = await encrypt(key);
+        if (!name) {
+            return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+        }
 
-    // Save to database
-    const apiKey = await prisma.apiKey.create({
-        data: {
-            name,
-            key: hashedKey,
-            userId,
-            permissions,
-            expiresAt: expiresAt ? new Date(expiresAt) : null,
-        },
-    });
+        const keyString = 'sk_' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2)
 
-    // Return key only once
-    return NextResponse.json({
-        success: true,
-        apiKey: {
-            ...apiKey,
-            key, // Plain key shown only once
-        },
-    });
+        const apiKey = await prisma.apiKey.create({
+            data: {
+                name,
+                key: keyString, // In prod: Store hashed version, return raw only once
+                userId: user.id
+            }
+        })
+
+        return NextResponse.json(apiKey, { status: 201 })
+    } catch (error: any) {
+        logger.error('Create API key failed:', error.message)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
 }

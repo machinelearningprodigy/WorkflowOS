@@ -1,26 +1,30 @@
-// Workflow runs API - Get execution history
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
+import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/db';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    params: { params: Promise<{ id: string }> }
 ) {
-    const { userId } = auth();
-    if (!userId) {
+    const { id: workflowId } = await params.params;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const workflowId = params.id;
     const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     // Get workflow runs
     const runs = await prisma.workflowRun.findMany({
-        where: { workflowId, workflow: { userId } },
-        orderBy: { createdAt: 'desc' },
+        where: {
+            workflowId,
+            workflow: { creatorId: user.id },
+        },
+        orderBy: { startTime: 'desc' }, // Changed from createdAt to startTime based on schema usage in other files
         skip: (page - 1) * limit,
         take: limit,
         include: {
@@ -29,7 +33,10 @@ export async function GET(
     });
 
     const total = await prisma.workflowRun.count({
-        where: { workflowId, workflow: { userId } },
+        where: {
+            workflowId,
+            workflow: { creatorId: user.id },
+        },
     });
 
     return NextResponse.json({
@@ -42,3 +49,4 @@ export async function GET(
         },
     });
 }
+

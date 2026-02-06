@@ -1,32 +1,64 @@
-// Test integration API - Test integration connection
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { getIntegrationProvider } from '@/lib/integrations/registry';
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { getProvider } from '@/lib/integrations/registry'
+import { prisma } from '@/lib/db'
+import { logger } from '@/utils/logger'
 
+/**
+ * Route: POST /api/integrations/[id]/test
+ * Tests an integration connection.
+ */
 export async function POST(
     request: NextRequest,
     { params }: { params: { id: string } }
 ) {
-    const { userId } = auth();
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const integrationId = params.id;
+    const providerId = params.id
 
     try {
-        const provider = getIntegrationProvider(integrationId);
-        const result = await provider.test();
+        const provider = getProvider(providerId)
+
+        if (!provider) {
+            return NextResponse.json({ error: 'Provider not found' }, { status: 404 })
+        }
+
+        const orgId = user.id
+
+        // Get credentials
+        const credential = await prisma.orgCredential.findFirst({
+            where: {
+                orgId,
+                providerId
+            }
+        })
+
+        if (!credential) {
+            return NextResponse.json({
+                error: 'Integration not connected'
+            }, { status: 404 })
+        }
+
+        // Test the connection
+        const testResult = await provider.test(credential.credentials as any)
+
+        logger.info(`Integration test successful: ${providerId}`)
 
         return NextResponse.json({
             success: true,
             message: 'Integration is working correctly',
-            result,
-        });
-    } catch (error) {
+            result: testResult
+        })
+    } catch (error: any) {
+        logger.error(`Integration test failed for ${providerId}:`, error.message)
         return NextResponse.json({
             success: false,
-            error: error.message,
-        }, { status: 400 });
+            error: error.message || 'Connection test failed'
+        }, { status: 400 })
     }
 }

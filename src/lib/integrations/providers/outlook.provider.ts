@@ -1,4 +1,21 @@
-// Outlook Provider - Integration with Microsoft Outlook
-// Actions: Send email, create draft, mark as read, move to folder
-// Triggers: New email received, email with specific subject
-// OAuth 2.0 authentication (Microsoft Graph API)
+import { BaseProvider, Action, Trigger } from "../base.provider";
+
+export class OutlookProvider extends BaseProvider {
+    name = "Outlook Calendar";
+    type = "CALENDAR";
+
+    getAvailableActions(): Action[] {
+        return [
+            {
+                id: "send_mail",
+                name: "Send Email",
+                description: "Send an email via Outlook.",
+                inputs: [
+                    { id: "to", name: "To", type: "string", required: true },
+                    { id: "subject", name: "Subject", type: "string", required: true },
+                    { id: "body", name: "Body", type: "string", required: true }
+                ]
+            }
+        ];
+    }
+}

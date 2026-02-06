@@ -1,34 +1,37 @@
-// Subscription portal API - Create Stripe customer portal session
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { stripe } from '@/lib/services/stripe.service';
-import { prisma } from '@/lib/db';
 
+import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { logger } from '@/utils/logger'
+import { stripe } from '@/lib/stripe'
+
+/**
+ * Route: POST /api/subscriptions/portal
+ * Create a billing portal session.
+ */
 export async function POST(request: NextRequest) {
-    const { userId } = auth();
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json();
-    const { returnUrl } = body;
-
     try {
-        const subscription = await prisma.subscription.findFirst({
-            where: { userId },
-        });
+        const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
 
-        if (!subscription) {
-            return NextResponse.json({ error: 'No subscription found' }, { status: 404 });
+        if (!dbUser?.stripeCustomerId) {
+            return NextResponse.json({ error: 'No billing account found' }, { status: 404 })
         }
 
         const session = await stripe.billingPortal.sessions.create({
-            customer: subscription.stripeCustomerId,
-            return_url: returnUrl,
-        });
+            customer: dbUser.stripeCustomerId,
+            return_url: `${request.nextUrl.origin}/dashboard/settings/billing`,
+        })
 
-        return NextResponse.json({ url: session.url });
-    } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ url: session.url })
+    } catch (error: any) {
+        logger.error('Create portal session failed:', error.message)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }

@@ -1,4 +1,17 @@
-// Google Forms Provider - Integration with Google Forms
-// Actions: Create form, get responses
-// Triggers: New form response submitted
-// OAuth 2.0 authentication
+import { BaseProvider, Action, Trigger } from "../base.provider";
+
+export class GoogleFormsProvider extends BaseProvider {
+    name = "Google Forms";
+    type = "FORMS";
+
+    getAvailableTriggers(): Trigger[] {
+        return [
+            {
+                id: "new_response",
+                name: "New Response",
+                description: "Triggers when a new form response is submitted.",
+                type: "webhook"
+            }
+        ];
+    }
+}
